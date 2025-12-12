@@ -130,8 +130,8 @@ export default function PrivacyPage() {
               contact us:
             </p>
             <ul className="mt-4 space-y-2 font-medium text-slate-900">
-              <li>By Email: support@technaam.com</li>
-              <li>By Founder Email: admin@technaam.com</li>
+              <li>Support Email: support@technaam.com</li>
+              <li>Admin Email: admin@technaam.com</li>
               <li>By Visiting: TechNaam HQ, Mandi Bahauddin, Pakistan.</li>
             </ul>
           </section>
