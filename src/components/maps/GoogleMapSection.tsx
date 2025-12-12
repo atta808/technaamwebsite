@@ -6,17 +6,22 @@ import {
   MarkerF,
   InfoWindowF,
 } from "@react-google-maps/api";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { Star } from "lucide-react";
 
-// Mandi Bahauddin Coordinates
+// Fallback Coordinates (Mandi Bahauddin)
 const CENTER = { lat: 32.5855, lng: 73.5463 };
+const LIBRARIES: "places"[] = ["places"];
 
 export default function GoogleMapSection() {
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+    libraries: LIBRARIES,
   });
 
   const [selectedLocation, setSelectedLocation] = useState(false);
+  const [placeDetails, setPlaceDetails] = useState<any>(null);
+  const [mapRef, setMapRef] = useState<google.maps.Map | null>(null);
 
   // Custom "TechNaam Blue" Map Style
   const mapOptions = useMemo(
@@ -59,10 +64,46 @@ export default function GoogleMapSection() {
     []
   );
 
+  // Fetch Business Details (Ratings/Reviews) once map loads
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    setMapRef(map);
+    // Use the Place ID you found
+    const placeId = "ChIJVVVVVZF9HzkRAISqbh1xCg8";
+
+    if (placeId && window.google) {
+      const service = new window.google.maps.places.PlacesService(map);
+      service.getDetails(
+        {
+          placeId: placeId,
+          fields: [
+            "name",
+            "rating",
+            "user_ratings_total",
+            "formatted_address",
+            "geometry",
+            "url",
+          ],
+        },
+        (place, status) => {
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            place
+          ) {
+            setPlaceDetails(place);
+            // Center map on the actual business location
+            if (place.geometry?.location) {
+              map.panTo(place.geometry.location);
+            }
+          }
+        }
+      );
+    }
+  }, []);
+
   if (loadError)
     return (
       <div className="p-10 text-center text-red-500 bg-red-50 rounded-xl">
-        Error loading Maps. Check API Key.
+        Error loading Maps.
       </div>
     );
   if (!isLoaded)
@@ -71,36 +112,71 @@ export default function GoogleMapSection() {
     );
 
   return (
-    <div className="w-full h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
+    <div className="w-full h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-200 relative">
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%" }}
         zoom={15}
         center={CENTER}
         options={mapOptions}
+        onLoad={onMapLoad}
       >
-        <MarkerF position={CENTER} onClick={() => setSelectedLocation(true)} />
+        {/* Marker Position: Use fetched location if available, else default */}
+        <MarkerF
+          position={placeDetails?.geometry?.location || CENTER}
+          onClick={() => setSelectedLocation(true)}
+        />
 
-        {selectedLocation && (
+        {/* Info Window */}
+        {(selectedLocation || placeDetails) && (
           <InfoWindowF
-            position={CENTER}
+            position={placeDetails?.geometry?.location || CENTER}
             onCloseClick={() => setSelectedLocation(false)}
+            options={{ pixelOffset: new window.google.maps.Size(0, -30) }}
           >
-            <div className="px-4 py-2 text-slate-900">
-              <h3 className="font-bold text-lg border-b pb-1 mb-2">
-                TechNaam HQ
+            <div className="px-4 py-3 text-slate-900 min-w-[200px]">
+              <h3 className="font-bold text-lg border-b pb-2 mb-2">
+                {placeDetails?.name || "TechNaam HQ"}
               </h3>
-              <p className="text-sm font-medium">Advocate Atta Ur Rehman</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Mandi Bahauddin, Pakistan
+
+              {/* Star Rating Section */}
+              {placeDetails?.rating && (
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="font-bold text-orange-500 text-lg">
+                    {placeDetails.rating}
+                  </span>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        size={14}
+                        className={
+                          i < Math.round(placeDetails.rating)
+                            ? "fill-orange-500 text-orange-500"
+                            : "text-gray-300"
+                        }
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    ({placeDetails.user_ratings_total} reviews)
+                  </span>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 mb-3">
+                {placeDetails?.formatted_address || "Mandi Bahauddin, Pakistan"}
               </p>
 
               <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${CENTER.lat},${CENTER.lng}`}
+                href={
+                  placeDetails?.url ||
+                  `https://www.google.com/maps/place/?q=place_id:ChIJVVVVVZF9HzkRAISqbh1xCg8`
+                }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block bg-[#0B66FF] text-white text-xs px-3 py-1.5 rounded hover:bg-blue-700 transition"
+                className="block text-center bg-[#0B66FF] text-white text-xs font-bold px-4 py-2 rounded hover:bg-blue-700 transition"
               >
-                Get Directions
+                View on Google Maps
               </a>
             </div>
           </InfoWindowF>
