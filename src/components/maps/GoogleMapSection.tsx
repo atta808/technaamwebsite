@@ -20,8 +20,10 @@ export default function GoogleMapSection() {
   });
 
   const [selectedLocation, setSelectedLocation] = useState(false);
+
+  // Fix: We add this special comment to allow the 'any' type for Google data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [placeDetails, setPlaceDetails] = useState<any>(null);
-  const [mapRef, setMapRef] = useState<google.maps.Map | null>(null);
 
   // Custom "TechNaam Blue" Map Style
   const mapOptions = useMemo(
@@ -66,9 +68,8 @@ export default function GoogleMapSection() {
 
   // Fetch Business Details (Ratings/Reviews) once map loads
   const onMapLoad = useCallback((map: google.maps.Map) => {
-    setMapRef(map);
     // Use the Place ID you found
-    const placeId = "ChIJVVVVVZF9HzkRAISqbh1xCg8";
+    const placeId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID;
 
     if (placeId && window.google) {
       const service = new window.google.maps.places.PlacesService(map);
@@ -170,7 +171,7 @@ export default function GoogleMapSection() {
               <a
                 href={
                   placeDetails?.url ||
-                  `https://www.google.com/maps/place/?q=place_id:ChIJVVVVVZF9HzkRAISqbh1xCg8`
+                  `http://googleusercontent.com/maps.google.com/6`
                 }
                 target="_blank"
                 rel="noopener noreferrer"
