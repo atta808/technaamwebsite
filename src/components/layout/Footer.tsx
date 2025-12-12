@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   Linkedin,
   Twitter,
@@ -17,11 +18,17 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
         {/* Column 1: Brand & Socials */}
         <div>
-          <Link
-            href="/"
-            className="text-2xl font-bold tracking-tighter text-white"
-          >
-            Tech<span className="text-[#0B66FF]">Naam</span>.
+          <Link href="/" className="flex items-center gap-2 mb-4">
+            <Image
+              src="/logo.jpg"
+              alt="TechNaam Logo"
+              width={36}
+              height={36}
+              className="rounded-lg border border-slate-700"
+            />
+            <span className="text-2xl font-bold tracking-tighter text-white">
+              Tech<span className="text-[#0B66FF]">Naam</span>.
+            </span>
           </Link>
           <p className="mt-4 text-slate-400 text-sm leading-relaxed">
             Bridging the gap between Law and Logic. We build premium digital
@@ -35,7 +42,6 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
-              aria-label="LinkedIn"
             >
               <Linkedin size={20} />
             </a>
@@ -44,7 +50,6 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
-              aria-label="Twitter / X"
             >
               <Twitter size={20} />
             </a>
@@ -53,7 +58,6 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
-              aria-label="Facebook"
             >
               <Facebook size={20} />
             </a>
@@ -62,7 +66,6 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
-              aria-label="Instagram"
             >
               <Instagram size={20} />
             </a>
@@ -71,7 +74,6 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
-              aria-label="TikTok"
             >
               <Video size={20} />
             </a>
@@ -182,3 +184,4 @@ export default function Footer() {
     </footer>
   );
 }
+

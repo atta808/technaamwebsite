@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image"; // Import the Image component
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,12 +34,18 @@ export default function Navbar() {
       )}
     >
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="text-2xl font-bold tracking-tighter text-dark"
-        >
-          Tech<span className="text-primary">Naam</span>.
+        {/* LOGO SECTION (Updated) */}
+        <Link href="/" className="flex items-center gap-2 group">
+          <Image
+            src="/logo.jpg"
+            alt="TechNaam Logo"
+            width={40}
+            height={40}
+            className="rounded-lg shadow-sm group-hover:scale-105 transition-transform"
+          />
+          <span className="text-2xl font-bold tracking-tighter text-dark">
+            Tech<span className="text-primary">Naam</span>.
+          </span>
         </Link>
 
         {/* Desktop Menu */}
