@@ -109,11 +109,11 @@ export default function GoogleMapSection() {
     );
   if (!isLoaded)
     return (
-      <div className="h-[450px] w-full bg-slate-200 animate-pulse rounded-xl" />
+      <div className="'h-[450px]' w-full bg-slate-200 animate-pulse rounded-xl" />
     );
 
   return (
-    <div className="w-full h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-200 relative">
+    <div className="w-full 'h-[28rem]' rounded-2xl overflow-hidden shadow-2xl border border-slate-200 relative">
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%" }}
         zoom={15}
@@ -134,7 +134,7 @@ export default function GoogleMapSection() {
             onCloseClick={() => setSelectedLocation(false)}
             options={{ pixelOffset: new window.google.maps.Size(0, -30) }}
           >
-            <div className="px-4 py-3 text-slate-900 min-w-[200px]">
+            <div className="px-4 py-3 text-slate-900 'min-w-[200px]'">
               <h3 className="font-bold text-lg border-b pb-2 mb-2">
                 {placeDetails?.name || "TechNaam HQ"}
               </h3>
@@ -175,7 +175,7 @@ export default function GoogleMapSection() {
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-center bg-[#0B66FF] text-white text-xs font-bold px-4 py-2 rounded hover:bg-blue-700 transition"
+                className="block text-center 'bg-[#0B66FF]' text-white text-xs font-bold px-4 py-2 rounded hover:bg-blue-700 transition"
               >
                 View on Google Maps
               </a>

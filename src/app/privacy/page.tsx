@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | TechNaam & Apps",
-  description: "Privacy Policy for TechNaam, CardSphere, and LegalSphereDiary.",
+  description:
+    "Privacy Policy for TechNaam, CardSphere, and LegalSphereDiary.",
 };
 
 export default function PrivacyPage() {
@@ -25,19 +26,24 @@ export default function PrivacyPage() {
 
         {/* Legal Content */}
         <div className="space-y-12 text-slate-700 leading-relaxed">
+          {/* 1 */}
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               1. Introduction
             </h2>
             <p className="mb-4">
-              Welcome to <strong>TechNaam</strong> (&quot;we,&quot;
-              &quot;our,&quot; or &quot;us&quot;). We are committed to
-              protecting your privacy. This Privacy Policy explains how we
-              collect, use, and safeguard your information when you visit our
-              website (www.technaam.com) or use our mobile applications,
+              Welcome to <strong>TechNaam</strong> (we, our, or us). We are
+              committed to protecting your privacy. This Privacy Policy explains
+              how we collect, use, and safeguard your information when you visit
+              our website (www.technaam.com) or use our mobile applications,
               including <strong>CardSphere</strong>,{" "}
               <strong>LegalSphereDiary</strong>, and other digital tools
-              (collectively, the &quot;Services&quot;).
+              (collectively, the Services).
+            </p>
+            <p className="mb-4">
+              Our applications may store your data locally on your device
+              (offline mode) and securely sync it with cloud services when an
+              internet connection is available.
             </p>
             <p>
               By using our Services, you agree to the collection and use of
@@ -45,94 +51,141 @@ export default function PrivacyPage() {
             </p>
           </section>
 
+          {/* 2 */}
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               2. Information We Collect
             </h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                <strong>Personal Data:</strong> While using our Apps (like
-                LegalSphereDiary), we may ask you to provide personally
-                identifiable information, such as your Name, Email address,
-                Phone number, and Professional details (e.g., Bar Council
-                License No).
+                <strong>Personal Data:</strong> Name, Email address, Phone
+                number, and professional details (e.g., Bar Council License No).
               </li>
               <li>
-                <strong>Usage Data:</strong> We may collect information on how
-                the Service is accessed and used, including device type, IP
-                address, and operating system version.
+                <strong>Usage Data:</strong> Device type, IP address, OS version,
+                and app usage behavior.
               </li>
             </ul>
           </section>
 
+          {/* 3 */}
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               3. How We Use Your Data
             </h2>
-            <p className="mb-4">
-              We use the collected data for the following purposes:
-            </p>
             <ul className="list-disc pl-5 space-y-2">
-              <li>
-                To provide and maintain our Service (e.g., syncing your Case
-                Diary).
-              </li>
-              <li>To notify you about changes to our Service.</li>
-              <li>
-                To allow you to participate in interactive features (e.g.,
-                Sharing Digital Cards via CardSphere).
-              </li>
+              <li>To provide and maintain our Services.</li>
+              <li>To sync and manage your legal data securely.</li>
               <li>To provide customer support.</li>
+              <li>To improve app performance and features.</li>
             </ul>
           </section>
 
+          {/* 4 */}
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               4. Permissions & Third-Party Services
             </h2>
-            <p className="mb-4">
-              Our apps may require specific permissions to function correctly:
-            </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                <strong>Camera/Gallery:</strong> Used in <em>CardSphere</em> for
-                uploading profile photos or scanning QR codes.
+                <strong>Camera/Gallery:</strong> For uploading profile images or
+                scanning QR codes.
               </li>
               <li>
-                <strong>Contacts:</strong> Used to save digital visiting cards
-                to your phone.
+                <strong>Contacts:</strong> For saving digital cards.
               </li>
               <li>
-                <strong>Location (Google Maps API):</strong> Used to display
-                office locations or client addresses.
+                <strong>Location:</strong> For maps and address features.
               </li>
             </ul>
           </section>
 
+          {/* 5 */}
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               5. Data Security
             </h2>
             <p>
-              The security of your data is important to us. We use commercially
-              acceptable means (encryption, secure databases) to protect your
-              Personal Data. However, remember that no method of transmission
-              over the Internet is 100% secure.
+              We use secure technologies and encryption to protect your data.
+              However, no system is 100% secure, and we cannot guarantee absolute
+              security.
             </p>
           </section>
 
+          {/* 6 */}
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
-              6. Contact Us
+              6. Data Sharing & Third Parties
+            </h2>
+            <p className="mb-4">
+              We do not sell your personal data. However, we use trusted
+              third-party services:
+            </p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>
+                <strong>Firebase (Google):</strong> Authentication, database, and
+                syncing.
+              </li>
+              <li>
+                <strong>Google APIs:</strong> Maps and location services.
+              </li>
+            </ul>
+          </section>
+
+          {/* 7 */}
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              7. Data Retention
             </h2>
             <p>
-              If you have any questions about this Privacy Policy, you can
-              contact us:
+              We retain your data only as long as necessary. You may request
+              deletion of your data at any time.
             </p>
+          </section>
+
+          {/* 8 */}
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              8. Your Rights
+            </h2>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>You can access your data.</li>
+              <li>You can request corrections.</li>
+              <li>You can request deletion of your account.</li>
+            </ul>
+          </section>
+
+          {/* 9 */}
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              9. Children&apos;s Privacy
+            </h2>
+            <p>
+              Our Services are not intended for children under 13. We do not
+              knowingly collect data from children.
+            </p>
+          </section>
+
+          {/* 10 */}
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              10. Changes to This Policy
+            </h2>
+            <p>
+              We may update this Privacy Policy. Changes will be posted on this
+              page.
+            </p>
+          </section>
+
+          {/* 11 */}
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              11. Contact Us
+            </h2>
             <ul className="mt-4 space-y-2 font-medium text-slate-900">
               <li>Support Email: support@technaam.com</li>
               <li>Admin Email: admin@technaam.com</li>
-              <li>By Visiting: TechNaam HQ, Mandi Bahauddin, Pakistan.</li>
+              <li>Mandi Bahauddin, Pakistan</li>
             </ul>
           </section>
         </div>

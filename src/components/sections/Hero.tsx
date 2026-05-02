@@ -18,7 +18,7 @@ export default function Hero() {
         {/* Headline */}
         <h1 className="text-5xl md:text-7xl font-extrabold text-dark tracking-tight mb-6 leading-tight animate-fade-up [animation-delay:200ms]">
           Bridging Law & Logic <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-cyan-500">
+          <span className="text-transparent bg-clip-text 'bg-gradient-to-r' from-primary to-cyan-500">
             through Code.
           </span>
         </h1>

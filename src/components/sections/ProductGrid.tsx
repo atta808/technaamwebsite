@@ -37,12 +37,12 @@ export default function ProductGrid() {
   return (
     <section className="py-24 bg-white relative overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+      <div className="absolute top-0 left-0 w-full h-px 'bg-gradient-to-r' from-transparent via-slate-200 to-transparent"></div>
 
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">
-            Our <span className="text-[#0B66FF]">Digital Ecosystem</span>
+            Our <span className="text-[#0B66FF]'">Digital Ecosystem</span>
           </h2>
           <p className="text-slate-500 max-w-2xl mx-auto text-lg">
             Tools designed for precision, security, and speed. Built for the
@@ -58,11 +58,11 @@ export default function ProductGrid() {
             >
               {/* Hover Gradient Border Effect */}
               <div
-                className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${item.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}
+                className={`absolute top-0 left-0 w-full h-1 'bg-gradient-to-r' ${item.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}
               ></div>
 
               <div
-                className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300`}
+                className={`w-14 h-14 rounded-2xl 'bg-gradient-to-br' ${item.gradient} flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300`}
               >
                 {item.icon}
               </div>
@@ -71,7 +71,7 @@ export default function ProductGrid() {
                 {item.badge}
               </div>
 
-              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-[#0B66FF] transition-colors">
+              <h3 className="text-xl font-bold text-slate-900 mb-3 'group-hover:text-[#0B66FF]' transition-colors">
                 {item.title}
               </h3>
 
@@ -81,7 +81,7 @@ export default function ProductGrid() {
 
               <Link
                 href={item.link}
-                className="inline-flex items-center font-bold text-sm text-slate-700 hover:text-[#0B66FF] transition-colors"
+                className="inline-flex items-center font-bold text-sm text-slate-700 'hover:text-[#0B66FF]' transition-colors"
               >
                 Learn more{" "}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
