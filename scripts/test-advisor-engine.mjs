@@ -115,12 +115,12 @@ assert.equal(
     { ...requiredInput, local_ai_required: true, privacy_requirement: "standard" },
     product()
   ).score,
-  15
+  70
 );
 
 assert.equal(
   teamFitScore({ ...requiredInput, collaboration_required: true }, product()).score,
-  35
+  70
 );
 
 const budgetless = {

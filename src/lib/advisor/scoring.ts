@@ -37,15 +37,24 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function hasFeatureSupport(
+function featureState(
   product: AdvisorProduct,
-  slug: string,
-  supportedLevels = ["supported", "partial"]
-) {
-  return product.features.some(
-    (feature) =>
-      feature.slug === slug && supportedLevels.includes(feature.support_level)
-  );
+  slug: string
+): "supported" | "partial" | "not_supported" | "unknown" {
+  const feature = product.features.find((item) => item.slug === slug);
+  if (!feature) {
+    return "unknown";
+  }
+  if (feature.support_level === "supported") {
+    return "supported";
+  }
+  if (feature.support_level === "partial") {
+    return "partial";
+  }
+  if (feature.support_level === "not_supported") {
+    return "not_supported";
+  }
+  return "unknown";
 }
 
 export function normalizeMonthlyCost(
@@ -82,6 +91,90 @@ export function normalizeMonthlyCost(
   return Math.min(...candidates);
 }
 
+export type RecommendedPlanSelection = {
+  plan_name: string | null;
+  plan_kind: "free" | "paid" | "unknown";
+  monthly_cost: number | null;
+  free_alternative: boolean;
+  free_alternative_plan: string | null;
+};
+
+function planMonthlyCost(plan: PricingPlan, teamSize: number): number | null {
+  if (plan.price === null) {
+    return null;
+  }
+  if (plan.price_model === "usage_based" || plan.price_model === "custom") {
+    return null;
+  }
+
+  let cost = plan.price;
+  if (plan.billing_period === "annual") {
+    cost = plan.price / 12;
+  }
+  if (plan.is_per_user) {
+    cost = cost * Math.max(1, Math.round(teamSize));
+  }
+  return cost;
+}
+
+export function selectRecommendedPlan(
+  pricing: PricingPlan[],
+  teamSize: number
+): RecommendedPlanSelection {
+  const freePlans = pricing.filter(
+    (plan) => plan.is_free || (plan.price !== null && plan.price === 0)
+  );
+  const paidPlans = pricing.filter(
+    (plan) =>
+      plan.price !== null &&
+      plan.price > 0 &&
+      plan.price_model !== "usage_based" &&
+      plan.price_model !== "custom"
+  );
+  const unknownPlans = pricing.filter(
+    (plan) =>
+      plan.price === null ||
+      plan.price_model === "usage_based" ||
+      plan.price_model === "custom"
+  );
+
+  const rankedPaid = paidPlans
+    .map((plan) => ({ plan, cost: planMonthlyCost(plan, teamSize) }))
+    .filter((item): item is { plan: PricingPlan; cost: number } => item.cost !== null)
+    .sort((a, b) => a.cost - b.cost || a.plan.name.localeCompare(b.plan.name));
+
+  if (rankedPaid.length > 0) {
+    const selected = rankedPaid[0];
+    const freeAlternative = freePlans[0] ?? null;
+    return {
+      plan_name: selected.plan.name,
+      plan_kind: "paid",
+      monthly_cost: selected.cost,
+      free_alternative: Boolean(freeAlternative),
+      free_alternative_plan: freeAlternative?.name ?? null,
+    };
+  }
+
+  const freePlan = freePlans[0] ?? null;
+  if (freePlan) {
+    return {
+      plan_name: freePlan.name,
+      plan_kind: "free",
+      monthly_cost: 0,
+      free_alternative: false,
+      free_alternative_plan: null,
+    };
+  }
+
+  return {
+    plan_name: unknownPlans[0]?.name ?? null,
+    plan_kind: "unknown",
+    monthly_cost: null,
+    free_alternative: false,
+    free_alternative_plan: null,
+  };
+}
+
 function requiredFeatureSlugs(input: AdvisorInput) {
   const slugs = new Set<string>();
 
@@ -113,19 +206,25 @@ export function featureMatchScore(input: AdvisorInput, product: AdvisorProduct) 
   let matched = 0;
 
   for (const slug of slugs) {
-    const feature = product.features.find((item) => item.slug === slug);
-    if (!feature) {
+    const state = featureState(product, slug);
+    if (state === "unknown") {
       missing.push(`feature:${slug}`);
       continue;
     }
-    if (feature.support_level === "supported") {
+    if (state === "supported") {
       matched += 1;
-    } else if (feature.support_level === "partial") {
+    } else if (state === "partial") {
       matched += 0.5;
     }
   }
 
-  return dimensionResult((matched / Math.max(1, slugs.length)) * 100, missing);
+  const knownCount = slugs.filter(
+    (slug) => featureState(product, slug) !== "unknown"
+  ).length;
+  if (knownCount === 0) {
+    return dimensionResult(70, missing);
+  }
+  return dimensionResult((matched / knownCount) * 100, missing);
 }
 
 export function requirementMatchScore(input: AdvisorInput, product: AdvisorProduct) {
@@ -138,19 +237,25 @@ export function requirementMatchScore(input: AdvisorInput, product: AdvisorProdu
   let matched = 0;
 
   for (const slug of slugs) {
-    const feature = product.features.find((item) => item.slug === slug);
-    if (!feature) {
+    const state = featureState(product, slug);
+    if (state === "unknown") {
       missing.push(`requirement:${slug}`);
       continue;
     }
-    if (feature.support_level === "supported") {
+    if (state === "supported") {
       matched += 1;
-    } else if (feature.support_level === "partial") {
+    } else if (state === "partial") {
       matched += 0.5;
     }
   }
 
-  return dimensionResult((matched / slugs.length) * 100, missing);
+  const knownCount = slugs.filter(
+    (slug) => featureState(product, slug) !== "unknown"
+  ).length;
+  if (knownCount === 0) {
+    return dimensionResult(70, missing);
+  }
+  return dimensionResult((matched / knownCount) * 100, missing);
 }
 
 export function budgetFitScore(
@@ -187,21 +292,21 @@ export function budgetFitScore(
 
 export function teamFitScore(input: AdvisorInput, product: AdvisorProduct) {
   const missing: string[] = [];
-  const feature = product.features.find((item) => item.slug === "collaboration");
+  const state = featureState(product, "collaboration");
 
   if (!input.collaboration_required) {
     return dimensionResult(90, missing);
   }
 
-  if (!feature) {
+  if (state === "unknown") {
     missing.push("collaboration_feature");
-    return dimensionResult(35, missing);
+    return dimensionResult(70, missing);
   }
 
-  if (feature.support_level === "supported") {
+  if (state === "supported") {
     return dimensionResult(100, missing);
   }
-  if (feature.support_level === "partial") {
+  if (state === "partial") {
     return dimensionResult(65, missing);
   }
 
@@ -215,8 +320,13 @@ export function localAiFitScore(input: AdvisorInput, product: AdvisorProduct) {
     return dimensionResult(100, missing);
   }
 
-  if (hasFeatureSupport(product, "local-model-support")) {
+  const state = featureState(product, "local-model-support");
+  if (state === "supported" || state === "partial") {
     return dimensionResult(100, missing);
+  }
+  if (state === "unknown") {
+    missing.push("local_ai_feature");
+    return dimensionResult(70, missing);
   }
 
   missing.push("local_ai_feature");
@@ -229,8 +339,13 @@ export function privacyFitScore(input: AdvisorInput, product: AdvisorProduct) {
     return dimensionResult(100, missing);
   }
 
-  if (hasFeatureSupport(product, "local-model-support")) {
+  const state = featureState(product, "local-model-support");
+  if (state === "supported" || state === "partial") {
     return dimensionResult(100, missing);
+  }
+  if (state === "unknown") {
+    missing.push("privacy_feature");
+    return dimensionResult(70, missing);
   }
 
   missing.push("privacy_feature");
@@ -270,8 +385,13 @@ export function agentFitScore(input: AdvisorInput, product: AdvisorProduct) {
     return dimensionResult(100, missing);
   }
 
-  if (hasFeatureSupport(product, "agent-mode")) {
+  const state = featureState(product, "agent-mode");
+  if (state === "supported" || state === "partial") {
     return dimensionResult(100, missing);
+  }
+  if (state === "unknown") {
+    missing.push("agent_feature");
+    return dimensionResult(70, missing);
   }
 
   missing.push("agent_feature");

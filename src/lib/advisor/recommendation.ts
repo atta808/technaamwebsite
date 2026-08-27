@@ -1,4 +1,8 @@
-import { normalizeMonthlyCost, scoreProduct, SCORING_VERSION } from "./scoring";
+import {
+  scoreProduct,
+  SCORING_VERSION,
+  selectRecommendedPlan,
+} from "./scoring";
 import type {
   AdvisorInput,
   AdvisorProduct,
@@ -13,10 +17,19 @@ function buildReasons(missing: string[]) {
   return missing.map((item) => `Limited data for ${item.replaceAll("_", " ")}.`);
 }
 
-function buildTradeoffs(product: AdvisorProduct, estimatedCost: number | null) {
+function buildTradeoffs(
+  product: AdvisorProduct,
+  estimatedCost: number | null,
+  planSelection: ReturnType<typeof selectRecommendedPlan>
+) {
   const tradeoffs: string[] = [];
-  if (estimatedCost === null) {
+  if (planSelection.plan_kind === "unknown") {
     tradeoffs.push("Public pricing is unavailable or not directly comparable.");
+  }
+  if (planSelection.plan_kind === "paid" && planSelection.free_alternative) {
+    tradeoffs.push(
+      `Free alternative available: ${planSelection.free_alternative_plan ?? "Free plan"}.`
+    );
   }
   if (!product.score || product.score.overall === null) {
     tradeoffs.push("No published TechNaam score is available.");
@@ -34,19 +47,21 @@ export function buildRecommendations(
   const recommendations: Recommendation[] = products
     .map((product) => {
       const result = scoreProduct(input, product);
-      const estimatedCost = normalizeMonthlyCost(
-        product.pricing,
-        input.team_size
-      );
+      const planSelection = selectRecommendedPlan(product.pricing, input.team_size);
+      const estimatedCost = planSelection.monthly_cost;
 
       return {
         product_id: product.id,
         product_slug: product.slug,
         product_name: product.name,
+        recommended_plan: planSelection.plan_name,
+        plan_kind: planSelection.plan_kind,
         score: result.score,
         reasons: buildReasons(result.missing_information),
-        tradeoffs: buildTradeoffs(product, estimatedCost),
+        tradeoffs: buildTradeoffs(product, estimatedCost, planSelection),
         estimated_monthly_cost: estimatedCost,
+        free_alternative: planSelection.free_alternative,
+        free_alternative_plan: planSelection.free_alternative_plan,
         category: product.category,
         confidence: result.confidence,
       };

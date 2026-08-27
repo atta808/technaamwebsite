@@ -50,6 +50,12 @@ export default function AdvisorResults({ result }: { result: AdvisorResult }) {
 
                 <dl className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div>
+                    <dt className="text-sm font-semibold text-slate-500">Recommended plan</dt>
+                    <dd className="text-slate-900">
+                      {recommendation.recommended_plan ?? "Unknown"}
+                    </dd>
+                  </div>
+                  <div>
                     <dt className="text-sm font-semibold text-slate-500">Estimated monthly cost</dt>
                     <dd className="text-slate-900">
                       {formatCost(recommendation.estimated_monthly_cost)}
@@ -67,6 +73,22 @@ export default function AdvisorResults({ result }: { result: AdvisorResult }) {
                     </dd>
                   </div>
                 </dl>
+
+                <div className="mt-4 text-sm">
+                  <p className="text-slate-700">
+                    Plan type:{" "}
+                    {recommendation.plan_kind === "free"
+                      ? "Free"
+                      : recommendation.plan_kind === "paid"
+                        ? "Paid"
+                        : "Unknown"}
+                  </p>
+                  {recommendation.free_alternative && recommendation.free_alternative_plan ? (
+                    <p className="text-slate-500">
+                      Free alternative: {recommendation.free_alternative_plan}
+                    </p>
+                  ) : null}
+                </div>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <div>

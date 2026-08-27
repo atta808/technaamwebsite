@@ -4,6 +4,7 @@ import {
   budgetFitScore,
   normalizeMonthlyCost,
   scoreProduct,
+  selectRecommendedPlan,
 } from "../src/lib/advisor/scoring.ts";
 
 const validBody = {
@@ -83,6 +84,32 @@ if (valid.ok) {
     assert.equal(allowedKeys.has(key), true, `unexpected private key: ${key}`);
   }
 }
+
+const cursorPricing = [
+  { name: "Hobby", price: 0, currency: "USD", billing_period: null, is_per_user: false, is_free: true, price_model: "free" },
+  { name: "Individual", price: 20, currency: "USD", billing_period: "monthly", is_per_user: false, is_free: false, price_model: "flat" },
+  { name: "Teams", price: 40, currency: "USD", billing_period: "monthly", is_per_user: true, is_free: false, price_model: "per_user" },
+  { name: "Enterprise", price: null, currency: "USD", billing_period: null, is_per_user: false, is_free: false, price_model: "custom" },
+];
+
+const cursorOnePerson = selectRecommendedPlan(cursorPricing, 1);
+assert.equal(cursorOnePerson.plan_kind, "paid");
+assert.equal(cursorOnePerson.monthly_cost, 20);
+assert.equal(cursorOnePerson.free_alternative, true);
+assert.equal(cursorOnePerson.free_alternative_plan, "Hobby");
+
+const freeOnly = selectRecommendedPlan([cursorPricing[0]], 1);
+assert.equal(freeOnly.plan_kind, "free");
+assert.equal(freeOnly.monthly_cost, 0);
+assert.equal(freeOnly.free_alternative, false);
+
+const perUser = selectRecommendedPlan([cursorPricing[2]], 5);
+assert.equal(perUser.monthly_cost, 200);
+
+const customOnly = selectRecommendedPlan([cursorPricing[3]], 1);
+assert.equal(customOnly.plan_kind, "unknown");
+assert.equal(customOnly.monthly_cost, null);
+assert.equal(customOnly.monthly_cost === 0, false);
 
 const noDataProduct = {
   ...product,

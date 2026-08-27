@@ -62,10 +62,14 @@ export type Recommendation = {
   product_id: string;
   product_slug: string;
   product_name: string;
+  recommended_plan: string | null;
+  plan_kind: "free" | "paid" | "unknown";
   score: number;
   reasons: string[];
   tradeoffs: string[];
   estimated_monthly_cost: number | null;
+  free_alternative: boolean;
+  free_alternative_plan: string | null;
   category: string | null;
   confidence: number;
 };
