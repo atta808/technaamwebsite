@@ -9,7 +9,9 @@
     "lint": "eslint",
     "validate:seed": "node scripts/validate-technaam-seed.mjs",
     "import:seed": "node scripts/import-technaam-seed.mjs",
-    "publish:product": "node scripts/publish-technaam-product.mjs"
+    "publish:product": "node scripts/publish-technaam-product.mjs",
+    "test:advisor": "node scripts/test-advisor-engine.mjs",
+    "test:advisor-api": "node scripts/test-advisor-api.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
