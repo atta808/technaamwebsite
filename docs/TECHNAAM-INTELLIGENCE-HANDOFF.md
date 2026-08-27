@@ -519,3 +519,31 @@ For Google Jules, Codex, and future coding agents:
 - Known tests: `test:advisor`, `test:advisor-api`, and `validate:seed`.
 - Known limitations are listed in section 17.
 - Live Supabase row state: not verified from repository.
+
+## 25. Phase 5C: DeepSeek AI Explanation Layer
+
+Phase 5C introduces the AI Explanation and Personalization layer to the Advisor.
+
+**Architectural Principle:**
+- The deterministic recommendation engine remains strictly authoritative. It computes the scores, ranks, pricing, plans, and missing information.
+- The AI layer is strictly for personalized textual explanation.
+
+**DeepSeek Provider (`deepseek-v4-flash`):**
+- Uses `https://api.deepseek.com/v1/chat/completions` via native `fetch` (no heavy SDK).
+- Provider abstraction is located in `src/lib/ai/provider.ts` and `src/lib/ai/deepseek.ts`.
+- Environment Variable: `DEEPSEEK_API_KEY` (must remain server-side only).
+
+**Security & Sanitized Context:**
+- Endpoint: `POST /api/advisor/explain`.
+- Clients send only `AdvisorInput`. The endpoint strictly **recomputes** the deterministic `AdvisorResult` server-side so clients cannot spoof scores or prices to the AI.
+- `src/lib/ai/context.ts` constructs a sanitized AI payload containing only the Top 3 recommendations.
+- All IDs, category slugs, pricing numbers, and scores are deliberately stripped from the context sent to DeepSeek to enforce the authoritative rule.
+- `missing_information` is deliberately preserved so the AI can explain uncertainty.
+
+**Fallback & Privacy:**
+- If the DeepSeek API fails, times out (15s), or hits the local rate limit (5 req/min), it degrades gracefully returning `{ status: 'unavailable' }`.
+- If `AdvisorInput.privacy_requirement` is `"offline"`, the API bypasses DeepSeek entirely and instantly returns the unavailable state.
+- The UI (`AdvisorExplanation.tsx`) handles this fallback by hiding itself seamlessly without breaking the deterministic view.
+
+**Tests:**
+- AI constraints (sanitization, top 3 rule, privacy) are verified in `scripts/test-advisor-ai.js`.

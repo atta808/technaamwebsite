@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AdvisorResults from "@/components/advisor/AdvisorResults";
+import AdvisorExplanation from "@/components/advisor/AdvisorExplanation";
 import type { AdvisorResult } from "@/lib/advisor";
 
 type FormState = {
@@ -352,6 +353,24 @@ export default function AdvisorForm() {
       {result ? (
         <div className="mt-10">
           <AdvisorResults result={result} />
+          <AdvisorExplanation input={{
+            industry: form.industry,
+            team_size: Number(form.team_size),
+            budget_monthly: form.budget_monthly === "" ? null : Number(form.budget_monthly),
+            project_type: form.project_type,
+            primary_languages: splitList(form.primary_languages),
+            frameworks: splitList(form.frameworks),
+            operating_systems: splitList(form.operating_systems),
+            deployment_preference: form.deployment_preference,
+            ai_preference: form.ai_preference,
+            privacy_requirement: form.privacy_requirement as "standard" | "high" | "offline",
+            local_ai_required: form.local_ai_required,
+            collaboration_required: form.collaboration_required,
+            agent_required: form.agent_required,
+            codebase_size: form.codebase_size as "small" | "medium" | "large",
+            experience_level: form.experience_level as "beginner" | "intermediate" | "advanced",
+            additional_requirements: form.additional_requirements || undefined,
+          }} />
         </div>
       ) : null}
     </div>
