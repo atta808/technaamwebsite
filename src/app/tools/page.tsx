@@ -9,20 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function ToolsPage() {
-  // TEMPORARY DIAGNOSTIC — remove after Vercel runtime environment check.
-  const hasSupabaseUrl = Boolean(process.env.SUPABASE_URL);
-  const hasSupabaseAnonKey = Boolean(process.env.SUPABASE_ANON_KEY);
-
-  if (!hasSupabaseUrl || !hasSupabaseAnonKey) {
-    return (
-      <main className="min-h-screen bg-slate-50 pt-32 pb-20">
-        <pre>
-          {`SUPABASE_URL: ${hasSupabaseUrl ? "PRESENT" : "MISSING"}\nSUPABASE_ANON_KEY: ${hasSupabaseAnonKey ? "PRESENT" : "MISSING"}`}
-        </pre>
-      </main>
-    );
-  }
-
   const products = await getPublishedTools();
 
   return (
