@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import AdvisorExplanation from "@/components/advisor/AdvisorExplanation";
 import AdvisorResults from "@/components/advisor/AdvisorResults";
 import type { AdvisorResult } from "@/lib/advisor";
+import type { AIExplanation } from "@/lib/advisor/ai/types";
 
 type FormState = {
   industry: string;
@@ -53,6 +55,11 @@ export default function AdvisorForm() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<AdvisorResult | null>(null);
+  const [explanation, setExplanation] = useState<AIExplanation | null>(null);
+  const [explanationState, setExplanationState] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
+  const [explanationReason, setExplanationReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,11 +139,43 @@ export default function AdvisorForm() {
         );
       } else {
         setResult(data as AdvisorResult);
+        void requestExplanation(payload);
       }
     } catch {
       setError("Unable to build recommendation.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function requestExplanation(payload: unknown) {
+    setExplanationState("loading");
+    setExplanationReason(null);
+
+    try {
+      const response = await fetch("/api/advisor/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setExplanationState("unavailable");
+        return;
+      }
+
+      if (data.available) {
+        setExplanation(data.explanation as AIExplanation);
+        setExplanationState("ready");
+      } else {
+        setExplanation(null);
+        setExplanationState("unavailable");
+        setExplanationReason(data.reason ?? null);
+      }
+    } catch {
+      setExplanationState("unavailable");
+      setExplanationReason(null);
     }
   }
 
@@ -352,6 +391,11 @@ export default function AdvisorForm() {
       {result ? (
         <div className="mt-10">
           <AdvisorResults result={result} />
+          <AdvisorExplanation
+            state={explanationState}
+            explanation={explanation}
+            reason={explanationReason}
+          />
         </div>
       ) : null}
     </div>

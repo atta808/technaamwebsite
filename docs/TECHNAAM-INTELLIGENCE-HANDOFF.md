@@ -519,3 +519,78 @@ For Google Jules, Codex, and future coding agents:
 - Known tests: `test:advisor`, `test:advisor-api`, and `validate:seed`.
 - Known limitations are listed in section 17.
 - Live Supabase row state: not verified from repository.
+
+## 25. Phase 5C — AI Explanation / Personalization Layer
+
+Phase 5C adds a server-only DeepSeek explanation layer around the deterministic
+Advisor. The deterministic engine remains authoritative.
+
+### Provider
+
+- Provider abstraction: `AIProvider` interface in
+  `src/lib/advisor/ai/types.ts`
+- DeepSeek implementation: `DeepSeekProvider` in
+  `src/lib/advisor/ai/provider.ts`
+- Exact model identifier: `deepseek-v4-flash`
+
+### Endpoint
+
+- `POST /api/advisor/explain`
+- The browser sends validated `AdvisorInput` only.
+- The server revalidates input, recomputes the deterministic
+  `AdvisorResult`, sanitizes context, and calls DeepSeek.
+- The client cannot supply `AdvisorResult`.
+
+### Sanitized Context
+
+- Explicit whitelist in `src/lib/advisor/ai/context.ts`.
+- Only approved input fields and the top 3 recommendations enter AI context.
+- No product IDs, slugs, internal IDs, affiliate data, evidence, private
+  sources, pricing history, change logs, or unpublished product data are sent.
+
+### Output Contract
+
+DeepSeek returns only:
+
+```json
+{
+  "summary": "string",
+  "product_explanations": [
+    { "why_it_fits": "string", "considerations": "string" }
+  ],
+  "uncertainty_note": "string"
+}
+```
+
+Score, ranking, price, plan, product ID, slug, and URL remain authoritative in
+the deterministic UI response.
+
+### Privacy
+
+- `privacy_requirement === "offline"` skips the provider call and returns
+  `{ available: false, reason: "offline" }`.
+- No Advisor data is persisted or stored in Supabase.
+
+### Failure Behavior
+
+- DeepSeek timeout, 4xx/5xx, malformed JSON, invalid schema, empty response, and
+  provider unavailability return `{ available: false, reason: "provider_unavailable" }`.
+- Deterministic Advisor results render independently of AI availability.
+
+### Rate Limiting
+
+- Lightweight in-memory sliding window for `/api/advisor/explain`.
+- 10 requests per 60 seconds per client key.
+- Per serverless instance; replaceable later.
+
+### Tests
+
+- `npm run test:advisor-ai`
+- Tests exercise the actual sanitizer, provider, output validator, and rate
+  limiter with mocked `fetch`. No live DeepSeek key is required.
+
+### Known Limitations
+
+- DeepSeek availability is external and may be unavailable.
+- The explanation layer is not persisted or cached.
+- The rate limiter is not shared across serverless instances.
