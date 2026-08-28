@@ -12,7 +12,8 @@
     "publish:product": "node scripts/publish-technaam-product.mjs",
     "test:advisor": "node scripts/test-advisor-engine.mjs",
     "test:advisor-api": "node scripts/test-advisor-api.mjs",
-    "test:advisor-ai": "node scripts/test-advisor-ai.mjs"
+    "test:advisor-ai": "node scripts/test-advisor-ai.mjs",
+    "test:roast": "node scripts/test-roast-engine.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
