@@ -222,3 +222,30 @@ assert.deepEqual(sanitizeForEquality(firstRun), sanitizeForEquality(resultWithAf
 
 
 console.log("Roast engine tests PASSED.");
+
+// 12. Multiple technologies resolution and independence test
+const multiTechStack = {
+  ...baseInput,
+  technologies: [
+    { name: "Next.js" },
+    { name: "UnknownTech" },
+    { name: "Cursor" }
+  ]
+};
+const resultMultiTech = roastMyStack(multiTechStack, mockCatalog);
+assert.equal(
+  resultMultiTech.resolved_technologies.find(t => t.normalized_name === "next.js")?.resolution_status,
+  "resolved",
+  "Known technology (Next.js) must resolve correctly"
+);
+assert.equal(
+  resultMultiTech.resolved_technologies.find(t => t.normalized_name === "cursor")?.resolution_status,
+  "resolved",
+  "Known technology (Cursor) must resolve correctly independently"
+);
+assert.equal(
+  resultMultiTech.unresolved_technologies.find(t => t.normalized_name === "unknowntech")?.resolution_status,
+  "unresolved",
+  "Unknown technology must be identified as unresolved independently without affecting known technologies"
+);
+console.log("Multi-technology resolution regression tests PASSED.");
