@@ -14,7 +14,8 @@
     "test:advisor-api": "node scripts/test-advisor-api.mjs",
     "test:advisor-ai": "node scripts/test-advisor-ai.mjs",
     "test:roast": "node scripts/test-roast-engine.mjs",
-    "test:roast-api": "node scripts/test-roast-api.mjs",
+    "test:roast-api": "npx tsx scripts/test-roast-api.mjs",
+    "test:roast-ai": "npx tsx scripts/test-roast-ai.mjs",
     "test:roast-parsing": "node scripts/test-roast-parsing.mjs"
   },
   "dependencies": {
