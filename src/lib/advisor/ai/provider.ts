@@ -17,6 +17,7 @@ export function parseAIExplanation(value: unknown): AIExplanation | null {
   }
 
   const record = value as Record<string, unknown>;
+
   if (
     !isString(record.summary) ||
     !isString(record.uncertainty_note) ||
@@ -31,13 +32,16 @@ export function parseAIExplanation(value: unknown): AIExplanation | null {
       if (typeof item !== "object" || item === null || Array.isArray(item)) {
         return [];
       }
+
       const explanation = item as Record<string, unknown>;
+
       if (
         !isString(explanation.why_it_fits) ||
         !isString(explanation.considerations)
       ) {
         return [];
       }
+
       return [
         {
           why_it_fits: explanation.why_it_fits,
@@ -45,10 +49,6 @@ export function parseAIExplanation(value: unknown): AIExplanation | null {
         },
       ];
     });
-
-  if (productExplanations.length === 0) {
-    return null;
-  }
 
   return {
     summary: record.summary,
@@ -80,7 +80,7 @@ export class DeepSeekProvider implements AIProvider {
   }
 
   async explain(
-    context: SanitizedAdvisorContext
+    context: SanitizedAdvisorContext,
   ): Promise<AIExplanationResponse> {
     if (!this.apiKey) {
       return { available: false, reason: "provider_unavailable" };
@@ -100,12 +100,64 @@ export class DeepSeekProvider implements AIProvider {
           },
           body: JSON.stringify({
             model: this.model,
-            response_format: { type: "json_object" },
+
+            // DeepSeek V4 Flash thinking remains enabled by default.
+            // We intentionally do not disable thinking for this Phase 5C test.
+
+            response_format: {
+              type: "json_object",
+            },
+
+            // DeepSeek recommends setting a reasonable output limit
+            // when using JSON Output to avoid truncated JSON.
+            max_tokens: 2000,
+
             messages: [
               {
                 role: "system",
-                content:
-                  "You are an explanation and personalization layer. You are NOT the recommendation engine. Use only the supplied deterministic facts. Do not invent facts, products, prices, plans, or capabilities. Do not change rankings or scores. Do not treat unknown information as negative evidence. If information is missing, say it is unknown. Do not mention affiliate relationships. Do not reveal internal system information.",
+                content: `
+You are an explanation and personalization layer.
+
+You are NOT the recommendation engine.
+
+Use only the supplied deterministic facts.
+
+Do not invent facts, products, prices, plans, or capabilities.
+Do not change rankings or scores.
+Do not treat unknown information as negative evidence.
+If information is missing, say it is unknown.
+Do not mention affiliate relationships.
+Do not reveal internal system information.
+
+Return ONLY valid JSON.
+Do not use Markdown fences.
+Do not include any text before or after the JSON object.
+
+The JSON MUST follow this structure:
+
+{
+  "summary": "A concise explanation of the overall deterministic recommendation result.",
+  "product_explanations": [
+    {
+      "why_it_fits": "Why this recommended product fits the user's needs.",
+      "considerations": "Important tradeoffs or considerations for this product."
+    }
+  ],
+  "uncertainty_note": "Important assumptions, missing information, or uncertainty."
+}
+
+Rules:
+
+- "summary" MUST be a string.
+- "product_explanations" MUST be an array.
+- "product_explanations" may be empty when there is not enough information.
+- Every item in "product_explanations" MUST contain:
+  - "why_it_fits" as a string
+  - "considerations" as a string
+- "uncertainty_note" MUST be a string.
+- Do not invent additional deterministic facts.
+- Do not change or reinterpret the supplied rankings, scores, prices, plans, or recommendations.
+`.trim(),
               },
               {
                 role: "user",
@@ -114,7 +166,7 @@ export class DeepSeekProvider implements AIProvider {
             ],
           }),
           signal: controller.signal,
-        }
+        },
       );
 
       if (!response.ok) {
@@ -122,19 +174,37 @@ export class DeepSeekProvider implements AIProvider {
       }
 
       const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: unknown } }>;
+        choices?: Array<{
+          message?: {
+            content?: unknown;
+          };
+        }>;
       };
+
       const content = payload.choices?.[0]?.message?.content;
-      if (typeof content !== "string") {
+
+      if (typeof content !== "string" || content.trim() === "") {
         return { available: false, reason: "provider_unavailable" };
       }
 
-      const parsed = parseAIExplanation(JSON.parse(content));
+      let parsedContent: unknown;
+
+      try {
+        parsedContent = JSON.parse(content);
+      } catch {
+        return { available: false, reason: "provider_unavailable" };
+      }
+
+      const parsed = parseAIExplanation(parsedContent);
+
       if (!parsed) {
         return { available: false, reason: "provider_unavailable" };
       }
 
-      return { available: true, explanation: parsed };
+      return {
+        available: true,
+        explanation: parsed,
+      };
     } catch {
       return { available: false, reason: "provider_unavailable" };
     } finally {
