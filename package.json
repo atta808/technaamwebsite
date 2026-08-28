@@ -6,10 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "validate:seed": "node scripts/validate-technaam-seed.mjs",
+    "import:seed": "node scripts/import-technaam-seed.mjs",
+    "publish:product": "node scripts/publish-technaam-product.mjs",
+    "test:advisor": "node scripts/test-advisor-engine.mjs",
+    "test:advisor-api": "node scripts/test-advisor-api.mjs",
+    "test:advisor-ai": "node scripts/test-advisor-ai.mjs",
+    "test:roast": "node scripts/test-roast-engine.mjs",
+    "test:roast-api": "node scripts/test-roast-api.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.112.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.560.0",

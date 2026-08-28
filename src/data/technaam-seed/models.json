@@ -1,0 +1,11 @@
+[
+  {
+    "id": "model-claude",
+    "product_id": "prod-claude-code",
+    "name": "Claude",
+    "provider": "Anthropic",
+    "model_type": "llm",
+    "source_id": "src-claude-code-docs",
+    "verification_date": "2026-08-26"
+  }
+]

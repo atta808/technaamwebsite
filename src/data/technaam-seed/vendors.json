@@ -1,0 +1,72 @@
+[
+  {
+    "id": "vendor-anysphere",
+    "name": "Anysphere, Inc.",
+    "slug": "anysphere",
+    "official_url": "https://cursor.com/",
+    "source_id": "src-cursor-product"
+  },
+  {
+    "id": "vendor-github",
+    "name": "GitHub, Inc.",
+    "slug": "github",
+    "official_url": "https://github.com/",
+    "source_id": "src-github-copilot-product"
+  },
+  {
+    "id": "vendor-anthropic",
+    "name": "Anthropic",
+    "slug": "anthropic",
+    "official_url": "https://www.anthropic.com/",
+    "source_id": "src-claude-code-docs"
+  },
+  {
+    "id": "vendor-codeium",
+    "name": "Codeium",
+    "slug": "codeium",
+    "official_url": "https://codeium.com/",
+    "source_id": "src-windsurf-product"
+  },
+  {
+    "id": "vendor-replit",
+    "name": "Replit, Inc.",
+    "slug": "replit",
+    "official_url": "https://replit.com/",
+    "source_id": "src-replit-product"
+  },
+  {
+    "id": "vendor-lovable",
+    "name": "Lovable",
+    "slug": "lovable",
+    "official_url": "https://lovable.dev/",
+    "source_id": "src-lovable-product"
+  },
+  {
+    "id": "vendor-stackblitz",
+    "name": "StackBlitz",
+    "slug": "stackblitz",
+    "official_url": "https://stackblitz.com/",
+    "source_id": "src-bolt-docs"
+  },
+  {
+    "id": "vendor-vercel",
+    "name": "Vercel",
+    "slug": "vercel",
+    "official_url": "https://vercel.com/",
+    "source_id": "src-v0-product"
+  },
+  {
+    "id": "vendor-ollama",
+    "name": "Ollama",
+    "slug": "ollama",
+    "official_url": "https://ollama.com/",
+    "source_id": "src-ollama-github"
+  },
+  {
+    "id": "vendor-aider",
+    "name": "Aider",
+    "slug": "aider",
+    "official_url": "https://aider.chat/",
+    "source_id": "src-aider-github"
+  }
+]

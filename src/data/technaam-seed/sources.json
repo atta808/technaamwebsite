@@ -1,0 +1,173 @@
+[
+  {
+    "id": "src-cursor-product",
+    "url": "https://cursor.com/",
+    "source_type": "official_product",
+    "publisher": "Anysphere, Inc.",
+    "title": "Cursor",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Cursor product site."
+  },
+  {
+    "id": "src-cursor-pricing",
+    "url": "https://cursor.com/pricing",
+    "source_type": "official_pricing",
+    "publisher": "Anysphere, Inc.",
+    "title": "Cursor Pricing",
+    "accessed_at": "2026-08-26",
+    "notes": "Current official Cursor pricing plans."
+  },
+  {
+    "id": "src-github-copilot-product",
+    "url": "https://github.com/features/copilot",
+    "source_type": "official_product",
+    "publisher": "GitHub, Inc.",
+    "title": "GitHub Copilot",
+    "accessed_at": "2026-08-26",
+    "notes": "Official GitHub Copilot product page."
+  },
+  {
+    "id": "src-github-copilot-pricing",
+    "url": "https://github.com/features/copilot/plans",
+    "source_type": "official_pricing",
+    "publisher": "GitHub, Inc.",
+    "title": "GitHub Copilot Plans & Pricing",
+    "accessed_at": "2026-08-26",
+    "notes": "Current official GitHub Copilot plans and pricing."
+  },
+  {
+    "id": "src-claude-code-docs",
+    "url": "https://code.claude.com/docs/en/overview",
+    "source_type": "official_docs",
+    "publisher": "Anthropic",
+    "title": "Claude Code Overview",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Claude Code documentation overview."
+  },
+  {
+    "id": "src-windsurf-product",
+    "url": "https://codeium.com/windsurf",
+    "source_type": "official_product",
+    "publisher": "Codeium",
+    "title": "Windsurf",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Windsurf product site."
+  },
+  {
+    "id": "src-replit-product",
+    "url": "https://replit.com/",
+    "source_type": "official_product",
+    "publisher": "Replit, Inc.",
+    "title": "Replit",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Replit product site."
+  },
+  {
+    "id": "src-replit-pricing",
+    "url": "https://docs.replit.com/help/pricing-and-plans",
+    "source_type": "official_docs",
+    "publisher": "Replit, Inc.",
+    "title": "Pricing and plans",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Replit pricing and plans documentation."
+  },
+  {
+    "id": "src-lovable-product",
+    "url": "https://lovable.dev/",
+    "source_type": "official_product",
+    "publisher": "Lovable",
+    "title": "Lovable",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Lovable product site."
+  },
+  {
+    "id": "src-lovable-pricing",
+    "url": "https://lovable.dev/pricing",
+    "source_type": "official_pricing",
+    "publisher": "Lovable",
+    "title": "Lovable Pricing",
+    "accessed_at": "2026-08-26",
+    "notes": "Current official Lovable pricing page."
+  },
+  {
+    "id": "src-lovable-docs",
+    "url": "https://docs.lovable.dev/introduction/subscription-plans",
+    "source_type": "official_docs",
+    "publisher": "Lovable",
+    "title": "Subscription plans",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Lovable subscription plan documentation."
+  },
+  {
+    "id": "src-bolt-product",
+    "url": "https://bolt.new/",
+    "source_type": "official_product",
+    "publisher": "StackBlitz",
+    "title": "Bolt.new",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Bolt.new product site."
+  },
+  {
+    "id": "src-bolt-docs",
+    "url": "https://support.bolt.new/",
+    "source_type": "official_docs",
+    "publisher": "StackBlitz",
+    "title": "Bolt Help Center",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Bolt.new help and documentation."
+  },
+  {
+    "id": "src-v0-product",
+    "url": "https://v0.app/",
+    "source_type": "official_product",
+    "publisher": "Vercel",
+    "title": "v0",
+    "accessed_at": "2026-08-26",
+    "notes": "Official v0 product site."
+  },
+  {
+    "id": "src-v0-docs",
+    "url": "https://v0.app/docs/faqs",
+    "source_type": "official_docs",
+    "publisher": "Vercel",
+    "title": "v0 FAQs",
+    "accessed_at": "2026-08-26",
+    "notes": "Official v0 documentation FAQs."
+  },
+  {
+    "id": "src-ollama-product",
+    "url": "https://ollama.com/",
+    "source_type": "official_product",
+    "publisher": "Ollama",
+    "title": "Ollama",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Ollama product site."
+  },
+  {
+    "id": "src-ollama-github",
+    "url": "https://github.com/ollama/ollama",
+    "source_type": "official_github",
+    "publisher": "Ollama",
+    "title": "ollama/ollama",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Ollama GitHub repository."
+  },
+  {
+    "id": "src-aider-product",
+    "url": "https://aider.chat/",
+    "source_type": "official_product",
+    "publisher": "Aider",
+    "title": "Aider",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Aider product site."
+  },
+  {
+    "id": "src-aider-github",
+    "url": "https://github.com/Aider-AI/aider",
+    "source_type": "official_github",
+    "publisher": "Aider",
+    "title": "Aider-AI/aider",
+    "accessed_at": "2026-08-26",
+    "notes": "Official Aider GitHub repository."
+  }
+]
