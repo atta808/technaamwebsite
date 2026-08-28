@@ -1,0 +1,72 @@
+[
+  {
+    "id": "feat-code-completion",
+    "name": "Code Completion",
+    "slug": "code-completion"
+  },
+  {
+    "id": "feat-agent-mode",
+    "name": "Agent Mode",
+    "slug": "agent-mode"
+  },
+  {
+    "id": "feat-terminal-integration",
+    "name": "Terminal Integration",
+    "slug": "terminal-integration"
+  },
+  {
+    "id": "feat-codebase-context",
+    "name": "Codebase Context",
+    "slug": "codebase-context"
+  },
+  {
+    "id": "feat-multi-file-editing",
+    "name": "Multi-file Editing",
+    "slug": "multi-file-editing"
+  },
+  {
+    "id": "feat-model-selection",
+    "name": "Model Selection",
+    "slug": "model-selection"
+  },
+  {
+    "id": "feat-mcp-support",
+    "name": "MCP Support",
+    "slug": "mcp-support"
+  },
+  {
+    "id": "feat-git-integration",
+    "name": "Git Integration",
+    "slug": "git-integration"
+  },
+  {
+    "id": "feat-local-model-support",
+    "name": "Local Model Support",
+    "slug": "local-model-support"
+  },
+  {
+    "id": "feat-cloud-model-support",
+    "name": "Cloud Model Support",
+    "slug": "cloud-model-support"
+  },
+  {
+    "id": "feat-browser-app-preview",
+    "name": "Browser/App Preview",
+    "slug": "browser-app-preview"
+  },
+  {
+    "id": "feat-deployment",
+    "name": "Deployment",
+    "slug": "deployment"
+  },
+  {
+    "id": "feat-collaboration",
+    "name": "Collaboration",
+    "slug": "collaboration"
+  },
+  {
+    "id": "feat-extensions-plugins",
+    "name": "Extensions / Plugins",
+    "slug": "extensions-plugins"
+  }
+]

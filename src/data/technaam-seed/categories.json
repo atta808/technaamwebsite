@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cat-ai-ide",
+    "name": "AI IDE",
+    "slug": "ai-ide"
+  },
+  {
+    "id": "cat-code-assistant",
+    "name": "Code Assistant",
+    "slug": "code-assistant"
+  },
+  {
+    "id": "cat-coding-agent",
+    "name": "Coding Agent",
+    "slug": "coding-agent"
+  },
+  {
+    "id": "cat-ai-app-builder",
+    "name": "AI App Builder",
+    "slug": "ai-app-builder"
+  },
+  {
+    "id": "cat-local-ai",
+    "name": "Local AI Runtime",
+    "slug": "local-ai"
+  },
+  {
+    "id": "cat-developer-tool",
+    "name": "Developer Tool",
+    "slug": "developer-tool"
+  }
+]

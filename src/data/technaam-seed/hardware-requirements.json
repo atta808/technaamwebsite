@@ -1,0 +1,28 @@
+[
+  {
+    "id": "hw-ollama",
+    "product_id": "prod-ollama",
+    "min_ram_gb": null,
+    "recommended_ram_gb": null,
+    "gpu_required": null,
+    "vram_required": null,
+    "cpu": null,
+    "operating_systems": ["macOS", "Windows", "Linux"],
+    "notes": "Official README provides installers for macOS, Windows, and Linux, but no single minimum hardware requirement was documented on the access date.",
+    "source_id": "src-ollama-github",
+    "verification_date": "2026-08-26"
+  },
+  {
+    "id": "hw-aider",
+    "product_id": "prod-aider",
+    "min_ram_gb": null,
+    "recommended_ram_gb": null,
+    "gpu_required": null,
+    "vram_required": null,
+    "cpu": null,
+    "operating_systems": null,
+    "notes": "No official minimum hardware requirement was documented in the README on the access date.",
+    "source_id": "src-aider-github",
+    "verification_date": "2026-08-26"
+  }
+]
