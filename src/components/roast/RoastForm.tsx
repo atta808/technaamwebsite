@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { StackInput } from "@/lib/roast/types";
 import { Plus, X, Loader2 } from "lucide-react";
+import { parseTechnologyInput } from "@/lib/roast/parsing";
 
 type RoastFormProps = {
   onSubmit: (input: StackInput) => Promise<void>;
@@ -16,6 +17,7 @@ function PillInput({
   onAdd,
   onRemove,
   required = false,
+  parseInput,
 }: {
   label: string;
   description?: string;
@@ -23,6 +25,7 @@ function PillInput({
   onAdd: (val: string) => void;
   onRemove: (idx: number) => void;
   required?: boolean;
+  parseInput?: (input: string) => string[];
 }) {
   const [inputValue, setInputValue] = useState("");
 
@@ -36,7 +39,12 @@ function PillInput({
   const addCurrentValue = () => {
     const val = inputValue.trim();
     if (val) {
-      onAdd(val);
+      if (parseInput) {
+        const parsedItems = parseInput(val);
+        parsedItems.forEach((item) => onAdd(item));
+      } else {
+        onAdd(val);
+      }
       setInputValue("");
     }
   };
@@ -174,8 +182,9 @@ export function RoastForm({ onSubmit, isLoading }: RoastFormProps) {
           description="List all the primary technologies in your stack (e.g., Next.js, Supabase, Cursor, Vercel)."
           required
           items={technologies}
-          onAdd={(val) => setTechnologies([...technologies, val])}
+          onAdd={(val) => setTechnologies((prev) => [...prev, val])}
           onRemove={(idx) => setTechnologies(technologies.filter((_, i) => i !== idx))}
+          parseInput={parseTechnologyInput}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
