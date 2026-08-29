@@ -1410,6 +1410,12 @@ Commercial opportunities follow the truth; they do not redefine it.
 - The `technology_entities` anchor is implemented at the DB level. UI/API currently still read from `products`.
 - OpenClaw ingestion APIs and commercial marketplace schemas (Phase 6C.2/5) are explicitly excluded from this phase.
 
+### Production Migration Audit
+- Completed the Phase 6C.1 Production Migration Baseline Audit (`docs/TECHNAAM_PHASE6C1_PRODUCTION_BASELINE_PLAN.md`).
+- Verified that production is at the pre-6C.1 state (10 products, 71 evidence rows, matching the first 4 migrations).
+- Proposed using `supabase db pull --linked` to establish migration history on production non-destructively, prior to pushing `040000` and `040001`.
+- Phase 6C.2 is strictly deferred until this audit proposal is executed and verified by the owner. No production databases were modified.
+
 ### Next Phase
 - Phase 6C.2 — Retail Price + Store/Seller Intelligence
 
