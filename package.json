@@ -16,7 +16,8 @@
     "test:roast": "node scripts/test-roast-engine.mjs",
     "test:roast-api": "npx tsx scripts/test-roast-api.mjs",
     "test:roast-ai": "npx tsx scripts/test-roast-ai.mjs",
-    "test:roast-parsing": "node scripts/test-roast-parsing.mjs"
+    "test:roast-parsing": "node scripts/test-roast-parsing.mjs",
+    "test:phase6c1": "node scripts/test-phase6c1-foundation.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",

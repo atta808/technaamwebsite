@@ -1375,3 +1375,43 @@ AI explains and personalizes it.
 Humans govern the rules.
 
 Commercial opportunities follow the truth; they do not redefine it.
+
+---
+
+## 42. Phase 6C.1 Implementation Log
+
+### Completed
+- Phase 6C.1 P0 Foundation implementation.
+
+### Architecture Implemented
+- `technology_entities` anchor introduced.
+- `tech_relationships` with strict self-referencing and unique constraints.
+- `hardware_entities` and `os_entities`.
+- Non-destructive `evidence` schema updates (`tech_entity_id` backfill).
+- RPC updates to `technaam_seed_import` for automatic anchor generation on seeded products.
+- Strict defense-in-depth RLS separating public technologies from private evidence.
+
+### Migrations Created
+- `supabase/migrations/20260826040000_phase6c1_technology_foundation.sql`
+- `supabase/migrations/20260826040001_phase6c1_rpc_updates.sql`
+
+### Tests Executed
+- `npm run test:advisor` - PASSED
+- `npm run test:roast` - PASSED
+- `npm run validate:seed` - PASSED
+- `npm run test:phase6c1` - PASSED
+- `npm run build` - PASSED
+
+### Cursor Regression Result
+- Cursor product mapping safely preserves all existing features.
+- Advisor and Roast logic remain completely deterministic and unaffected.
+
+### Known Limitations
+- The `technology_entities` anchor is implemented at the DB level. UI/API currently still read from `products`.
+- OpenClaw ingestion APIs and commercial marketplace schemas (Phase 6C.2/5) are explicitly excluded from this phase.
+
+### Next Phase
+- Phase 6C.2 — Retail Price + Store/Seller Intelligence
+
+### Updated
+`2026-08-29`
