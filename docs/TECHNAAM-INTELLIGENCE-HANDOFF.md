@@ -1,43 +1,161 @@
 # TechNaam Intelligence Engineering Handoff
 
-This document describes the current TechNaam Intelligence implementation in the
-`technaam-web` repository. It is intended for future coding agents, including
-Google Jules and Codex, so they can work on this branch without needing prior
-chat history.
+> **Document role:** Living engineering handoff and current-state record for TechNaam Intelligence.
+>
+> **Update rule:** This document MUST be updated by the responsible coding agent (including Google Jules/Codex) after every completed phase or material milestone. It is not a historical snapshot. The latest committed version is the authoritative engineering handoff for the repository.
+>
+> **Strategic source of truth:** `docs/TECHNAAM_MASTER_ROADMAP.md`
+>
+> **Immediate execution gate:** `docs/TECHNAAM_PHASE6C_TO_PHASE7_READINESS_AUDIT.md`
+
+---
 
 ## 1. Project Overview
 
-TechNaam is a Next.js 16 website owned by TechNaam. The existing site contains
-marketing pages and LegalSphere/legal-tools content.
+TechNaam is a Next.js 16 website owned by TechNaam. The existing site contains marketing pages and LegalSphere/legal-tools content.
 
-TechNaam Intelligence is the active extension on `technaam-intelligence`. Its
-purpose is to provide source-verified product intelligence for AI coding,
-local AI, and developer tools.
+TechNaam Intelligence is the active technology-intelligence extension on `technaam-intelligence`.
 
-Current delivered surfaces:
+Its long-term purpose is to become a **source-verified technology decision-intelligence platform** covering software, AI, hardware, operating systems, mobile devices, developer technology, cloud services, APIs, retailers/offers, compatibility, pricing, and related technology relationships.
+
+The platform must make recommendations from verified facts, compatibility, requirements, quality, cost, and user fit.
+
+Commercial opportunities may be attached to products and offers, but **commercial value must never silently determine the technical recommendation**.
+
+Core business principle:
+
+```text
+TRUTH
+  ↓
+RECOMMENDATION
+  ↓
+MONETIZATION
+```
+
+Current delivered surfaces include:
 
 - `/tools` — public product catalog
 - `/tools/[slug]` — product intelligence detail
 - `/compare/[comparison]` — reusable two-product comparison
-- `/advisor` — deterministic stack recommendation MVP
-- `/api/advisor` — server endpoint for advisor results
+- `/advisor` — deterministic stack recommendation
+- `/api/advisor` — advisor endpoint
+- `/api/advisor/explain` — server-only AI explanation layer
+- Roast My Stack surfaces/API and AI explanation layer
 
-The intended long-term shape is a technology decision intelligence platform
-backed by Supabase/PostgreSQL, with deterministic scoring as the authoritative
-recommendation layer and a future LLM layer for explanation and personalization
-only.
+The intended architecture is:
 
-## 2. Repository Structure
+```text
+Verified Sources
+      ↓
+Evidence / Provenance
+      ↓
+Normalized Technology Graph
+      ↓
+Deterministic Intelligence
+      ↓
+Recommendations / Comparisons / Compatibility
+      ↓
+AI Explanation / Personalization
+      ↓
+Commercial Opportunities
+```
+
+---
+
+## 2. Documentation Hierarchy
+
+TechNaam uses three important documentation layers.
+
+### 2.1 Master Roadmap
+
+`docs/TECHNAAM_MASTER_ROADMAP.md`
+
+This describes the long-term business, product, technology, monetization, OpenClaw, and expansion strategy.
+
+It is the strategic source of truth.
+
+### 2.2 Engineering Handoff
+
+`docs/TECHNAAM-INTELLIGENCE-HANDOFF.md`
+
+This document describes the **current implementation state**, architecture, completed phases, active phase, known limitations, coding-agent rules, test status, and exact handoff state.
+
+It is a **living document**.
+
+### 2.3 Phase 6C → Phase 7 Readiness Audit
+
+`docs/TECHNAAM_PHASE6C_TO_PHASE7_READINESS_AUDIT.md`
+
+This is the immediate implementation gate before large-scale OpenClaw catalog expansion.
+
+It identifies the foundation amendments required before Phase 7.
+
+---
+
+## 3. Living Handoff Protocol
+
+After every completed phase or material milestone, the coding agent MUST:
+
+1. Update this handoff.
+2. Update the completed/current phase status.
+3. Record the implementation actually present in the repository.
+4. Record important files/routes/schema changes.
+5. Record tests/build/lint results.
+6. Record Supabase/schema status where relevant.
+7. Record publication status.
+8. Record Git commit/push status when performed.
+9. Record known limitations introduced or resolved.
+10. Update the next planned phase.
+11. Never claim work is complete unless it is actually verified.
+12. Keep historical completed-phase information; do not erase important implementation history.
+13. Keep this document concise enough to remain useful to future agents.
+14. Commit the updated handoff with the phase/milestone whenever appropriate.
+15. Do not silently rewrite strategic policy; changes to business/recommendation policy require owner approval.
+
+### Required phase-update block
+
+At the end of every completed phase, add/update:
+
+```text
+## Current Phase Status
+
+Completed:
+- ...
+
+Current:
+- ...
+
+Next:
+- ...
+
+Verification:
+- Tests: ...
+- Build: ...
+- Lint: ...
+- Supabase: ...
+- Publication: ...
+- Git: ...
+
+Known limitations:
+- ...
+
+Updated:
+- YYYY-MM-DD
+```
+
+---
+
+## 4. Repository Structure
 
 Important paths:
 
 - `src/app` — Next.js App Router routes
 - `src/components` — UI components
-- `src/lib` — Supabase clients, queries, and advisor domain logic
+- `src/lib` — Supabase clients, queries, advisor domain logic
 - `src/data/technaam-seed` — source-backed seed JSON
-- `scripts` — validation, import, publication, and advisor test scripts
+- `scripts` — validation, import, publication, and test scripts
 - `supabase/migrations` — SQL migrations
-- `docs` — engineering handoff documents
+- `docs` — strategic and engineering documentation
 - `package.json` — scripts and dependencies
 
 Key subdirectories:
@@ -52,27 +170,33 @@ Key subdirectories:
 - `src/lib/supabase` — browser/server/admin Supabase clients
 - `src/lib/queries` — public product, detail, comparison, and advisor queries
 - `src/lib/advisor` — deterministic recommendation engine
+- `src/lib/advisor/ai` — AI explanation layer
 
-## 3. Git / Branch Strategy
+---
 
-Active development branch: `technaam-intelligence`.
+## 5. Git / Branch Strategy
 
-Recent important commits verified from `git log`:
+Active development branch:
 
-- `119dcda` — Build reusable comparison engine
-- `f1fce5d` — Build TechNaam Stack Advisor MVP
-- `f177547` — Fix advisor pricing and unknown scoring
+`technaam-intelligence`
 
-Workflow:
+Rules:
 
 - Development occurs on `technaam-intelligence`.
 - Experimental work stays off `main`.
-- Vercel Preview deploys are expected from `technaam-intelligence`.
-- Do **not** merge into `main` unless explicitly instructed.
+- Vercel Preview deployments are expected from `technaam-intelligence`.
+- Do NOT merge into `main` unless explicitly instructed by the owner.
+- Before substantial work, inspect `git status`.
+- Before handoff, review `git diff`.
+- Report the exact commit and push state.
 
-## 4. Environment Variables
+The approved Master Roadmap has been committed to this branch.
 
-Variable names used by the application:
+---
+
+## 6. Environment Variables / Secrets
+
+Variable names used by the application include:
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
@@ -80,19 +204,19 @@ Variable names used by the application:
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
 - `NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID`
 
-Important rules:
+Rules:
 
-- `SUPABASE_URL` and `SUPABASE_ANON_KEY` are used by server and public clients.
 - `SUPABASE_SERVICE_ROLE_KEY` is server/import-side only.
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser/client code.
-- Never commit `.env.local`, `.vercel-preview.env`, or other env files.
-- No actual values are recorded in this document.
+- Never expose it to browser/client code.
+- Never commit `.env.local`, `.vercel-preview.env`, or other environment files.
+- Never commit tokens, credentials, secret-bearing URLs, or API keys.
+- No actual secret values belong in this document.
 
-## 5. Supabase Architecture
+---
 
-The migrations build the following domain model.
+## 7. Supabase Architecture
 
-Initial migration:
+The current schema includes:
 
 - `vendors`
 - `categories`
@@ -109,23 +233,20 @@ Initial migration:
 - `benchmarks`
 - `technaam_scores`
 - `change_log`
-
-Schema v2 adds:
-
 - `product_models`
 - `evidence`
-- additional columns for product type, pricing model, provider, and hardware
 
-Public-safe data:
+Public-safe data includes:
 
-- Published/active products and their published dependencies
-- Public pricing plans
-- Public product features
-- Public model relationships
-- Public hardware requirements
-- Published TechNaam scores
+- published/active products
+- public pricing plans
+- public product features
+- public model relationships
+- public hardware requirements
+- published TechNaam scores
+- approved public attribution
 
-Private/internal data:
+Private/internal data includes:
 
 - `affiliate_programs`
 - `sources`
@@ -133,19 +254,22 @@ Private/internal data:
 - `change_log`
 - `evidence`
 
-RLS:
+RLS/publication principles:
 
-- Public read policies require `is_published = true` and `is_active = true`.
-- Products also exclude `status in ('deprecated','discontinued')`.
-- Private/internal tables have no anon/authenticated policies.
-- Administrative writes rely on `service_role`/RLS bypass.
+- Public read policies require published/active records.
+- Deprecated/discontinued products must not appear publicly.
+- Private/internal tables must not have unrestricted public read policies.
+- Administrative writes use service-role/RLS-bypass mechanisms.
+- Publication is controlled.
 
-RPC functions:
+Known RPCs:
 
 - `technaam_seed_import(jsonb)` — atomic seed import; service-role only
-- `technaam_publish_product(jsonb)` — atomic controlled product publication; service-role only
+- `technaam_publish_product(jsonb)` — controlled product publication; service-role only
 
-## 6. Tools Intelligence
+---
+
+## 8. Tools Intelligence
 
 Routes:
 
@@ -159,46 +283,53 @@ Query files:
 
 Behavior:
 
-- `/tools` reads only published/active products.
-- `/tools/[slug]` returns a published product detail.
-- Unpublished or unknown slugs return `notFound()`.
-- Public detail includes product, vendor, category, pricing, features, models,
-  hardware, published scores, and public-safe source attribution.
+- `/tools` reads published/active products.
+- `/tools/[slug]` returns published product detail.
+- Unknown/unpublished products do not become public detail pages.
+- Public detail can include product, vendor, category, pricing, features, models, hardware, scores, and safe attribution.
 
-## 7. Comparison Engine
+---
+
+## 9. Comparison Engine
 
 Route:
 
 - `/compare/[comparison]`
 
-Query/UI files:
+Relevant files:
 
 - `src/lib/queries/comparisons.ts`
 - `src/components/comparisons/ComparisonView.tsx`
 
-Comparison slug format: `left-vs-right`.
+Comparison slug:
+
+```text
+left-vs-right
+```
 
 Behavior:
 
-- Product slugs are resolved with `-`/`_` normalization.
-- Malformed slugs return `notFound()`.
-- Same-product comparisons return `notFound()`.
-- Unpublished or unknown products produce a controlled “Comparison coming soon” state.
+- Product slugs support `-`/`_` normalization.
+- Malformed comparisons are rejected.
+- Same-product comparisons are rejected.
+- Unknown/unpublished products produce controlled states.
 - Only public-safe data is rendered.
 
-## 8. Advisor Architecture
+---
+
+## 10. Deterministic Advisor
 
 Flow:
 
 1. `AdvisorForm` collects client input.
-2. The client posts to `/api/advisor`.
-3. `request.ts` validates the request body server-side.
-4. `advisor-catalog.ts` loads public product data with the anon-key client.
+2. Client posts to `/api/advisor`.
+3. `request.ts` validates the request server-side.
+4. `advisor-catalog.ts` loads public product data.
 5. `recommendation.ts` runs the deterministic engine.
-6. `AdvisorResult` is returned as JSON.
-7. `AdvisorResults` renders the response.
+6. `AdvisorResult` is returned.
+7. UI renders the result.
 
-Relevant files:
+Important files:
 
 - `src/app/advisor/page.tsx`
 - `src/components/advisor/AdvisorForm.tsx`
@@ -211,9 +342,11 @@ Relevant files:
 - `src/lib/advisor/index.ts`
 - `src/lib/queries/advisor-catalog.ts`
 
-## 9. Advisor Data Model
+---
 
-`AdvisorInput` fields:
+## 11. Advisor Input
+
+Current `AdvisorInput` includes:
 
 - `industry`
 - `team_size`
@@ -231,7 +364,26 @@ Relevant files:
 - `codebase_size`
 - `experience_level`
 
-`Recommendation` fields:
+Future expansion must be additive and controlled.
+
+Future signals may include:
+
+- hardware compatibility
+- OS/version compatibility
+- mobile/device compatibility
+- regional availability
+- effective usage cost
+- exact product variant
+- retailer/store quality
+- support lifecycle
+
+Do not break the existing contract without explicit approval and regression coverage.
+
+---
+
+## 12. Advisor Recommendation Contract
+
+Current `Recommendation` includes:
 
 - `product_id`
 - `product_slug`
@@ -247,7 +399,7 @@ Relevant files:
 - `category`
 - `confidence`
 
-`AdvisorResult` fields:
+Current `AdvisorResult` includes:
 
 - `recommendations[]`
 - `estimated_total_monthly_cost`
@@ -255,11 +407,15 @@ Relevant files:
 - `missing_information[]`
 - `methodology_version`
 
-## 10. Advisor Scoring Methodology
+---
 
-Current scoring version: `v1`.
+## 13. Advisor Scoring Methodology
 
-Exact weights:
+Current scoring version:
+
+`v1`
+
+Weights:
 
 | Dimension | Weight |
 |---|---:|
@@ -274,8 +430,7 @@ Exact weights:
 | agent_fit | 5 |
 | technical_fit | 5 |
 
-All dimensions normalize to 0–100. Weighted dimension scores are summed and
-divided by 100.
+All dimensions normalize to 0–100.
 
 Feature states:
 
@@ -284,23 +439,25 @@ Feature states:
 - `not_supported`
 - `unknown`
 
-Unknown data reduces confidence and is recorded as missing information. It is
-not treated as negative evidence. Explicit `not_supported` remains negative.
+Unknown data is not treated as negative evidence.
 
-## 11. Advisor Pricing Semantics
+Unknown data lowers confidence and is recorded as missing information.
 
-`estimated_monthly_cost` means the **recommended plan's normalized monthly
-cost**, not the cheapest possible plan.
+Explicit `not_supported` remains negative.
 
-Plan selection:
+### Non-negotiable recommendation rule
 
-- Paid plans are ranked by normalized monthly cost.
-- If paid plans exist, the cheapest viable paid plan is recommended.
-- A free plan is reported separately as `free_alternative` when available.
-- Free is recommended only when no viable paid plan exists.
-- Custom, usage-based, and unavailable plans produce `monthly_cost=null`.
+The deterministic intelligence layer remains authoritative.
 
-Pricing normalization:
+AI explanations, sponsorship, affiliate commissions, vendor payments, and promotional placement must not silently alter the deterministic recommendation.
+
+---
+
+## 14. Advisor Pricing Semantics
+
+`estimated_monthly_cost` means the recommended plan's normalized monthly cost.
+
+Current normalization:
 
 - Free → `0`
 - Flat monthly → direct price
@@ -308,289 +465,913 @@ Pricing normalization:
 - Per-user → `price * team_size`
 - Usage-based/custom → unknown
 
-Example behavior when data supports it: Cursor has `Hobby` free and
-`Individual` at `$20/month`; for a one-person project, the advisor recommends
-`Individual` at `$20` and reports `Hobby` as the free alternative.
+Plan selection currently prefers the cheapest viable paid plan when paid plans exist, while reporting a free alternative separately when available.
 
-## 12. Missing Data and Confidence
+This is safe for the current MVP but is not the final TechNaam effective-cost system.
+
+Future effective cost must be able to represent:
+
+```text
+subscription
++
+expected usage
++
+premium model usage
++
+overage
++
+infrastructure
++
+team size
+=
+estimated effective cost
+```
+
+Assumptions and uncertainty must remain visible.
+
+---
+
+## 15. Missing Data / Confidence
 
 Missing data does not equal negative evidence.
 
-The engine records missing signals, lowers confidence, and avoids fabricating
-compatibility.
+Current confidence behavior:
 
-Confidence starts at `1.0` and:
-
+- starts at `1.0`
 - subtracts `0.05` per unique missing signal
 - subtracts an additional `0.10` when pricing is unknown
-- has a floor of `0.25`
+- floor `0.25`
 
-## 13. Affiliate Isolation
+The system must not fabricate compatibility, pricing, benchmarks, or capabilities.
 
-Current architecture guarantees:
+---
 
-- `affiliate_programs` is not queried by the advisor.
-- Advisor scoring has no affiliate fields.
-- Recommendations do not use affiliate commission, payout, or sponsorship.
+## 16. Affiliate / Commercial Isolation
+
+The current architecture guarantees:
+
+- `affiliate_programs` is not queried by Advisor scoring.
+- Advisor scoring has no affiliate commission fields.
+- Affiliate commission/payout/sponsorship does not determine the recommendation.
 - Sponsored placement does not equal recommendation.
 
-## 14. Security Rules — DO NOT BREAK
+This rule is permanent.
 
-# DO NOT BREAK THESE RULES
+Future commercial intelligence may include:
 
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` in browser/client code.
-- Never commit secrets, env files, tokens, or credential-bearing URLs.
-- Never expose private evidence, sources, pricing history, or change log.
-- Never use affiliate commissions to influence recommendations.
-- Always validate advisor input server-side.
-- Never trust client-supplied scores.
-- Never trust client-supplied prices.
-- Do not bypass RLS for public features.
-- Do not expose unpublished products publicly.
-- Do not create public write access to protected tables.
-- Do not modify production/main without explicit approval.
+- affiliate programs
+- referral programs
+- commission
+- partner relationships
+- reseller relationships
+- advertisements
+- sponsored listings
+- featured placements
+- launch placements
+- API revenue
+- licensing
+- white-label opportunities
 
-## 15. API Contract
+Commercial intelligence is a separate layer.
 
-Endpoint: `POST /api/advisor`
+Business objective:
 
-Request body: JSON matching `AdvisorInput`.
+```text
+Truth
+  ↓
+Recommendation
+  ↓
+Commercial opportunity
+```
 
-Validation:
+---
 
-- Strict server-side validation.
-- Rejects malformed, oversized, and invalid enum/boolean/number values.
-- Returns `400` for invalid input.
+## 17. AI Explanation Layer — Phase 5C
 
-Responses:
+Phase 5C adds a server-only DeepSeek explanation layer around the deterministic Advisor.
 
-- `200` — `AdvisorResult`
-- `400` — validation error
-- `405` — unsupported method
-- `429` — rate limit exceeded
-- `500` — generic server failure, no internal details
+Provider abstraction:
 
-Rate limiting:
+- `AIProvider` interface
+- `DeepSeekProvider`
+- model identifier currently used by the implementation: `deepseek-v4-flash`
 
-- Lightweight in-memory sliding window.
-- 20 requests per 60 seconds per client key.
-- Per serverless instance; not a durable or shared production limiter.
+Endpoint:
 
-## 16. Testing
+- `POST /api/advisor/explain`
 
-Available commands:
+Behavior:
 
-- `npm run test:advisor` — deterministic scoring engine tests
-- `npm run test:advisor-api` — request validation and API logic tests
-- `npm run validate:seed` — seed JSON reference validation
-- `npm run build` — production build
-- `npm run lint` — ESLint
+1. Browser sends validated `AdvisorInput`.
+2. Server revalidates.
+3. Server recomputes deterministic `AdvisorResult`.
+4. Server sanitizes context.
+5. Provider receives only approved context.
+6. AI returns explanation.
+7. Deterministic score/ranking/price/plan remain authoritative.
 
-The advisor test scripts are lightweight Node scripts and do not use a heavy
-test framework. Full HTTP route smoke testing requires a running server:
+Sanitized context excludes:
+
+- product IDs
+- slugs
+- internal IDs
+- affiliate data
+- evidence
+- private sources
+- pricing history
+- change logs
+- unpublished product data
+
+Offline privacy requirement skips provider calls.
+
+Provider failure must not prevent deterministic Advisor results.
+
+Current AI rate limiting is lightweight in-memory and per serverless instance.
+
+Test:
+
+`npm run test:advisor-ai`
+
+---
+
+## 18. Roast My Stack
+
+The repository contains a Roast My Stack intelligence layer with:
+
+- request validation
+- parsing
+- scoring
+- recommendation
+- API
+- AI explanation
+
+Roast remains an intelligence/explanation feature and must not bypass the project's security, source, or commercial-isolation principles.
+
+---
+
+## 19. Seed / Catalog State
+
+The repository contains a source-backed seed plan covering initial AI/developer tools.
+
+The seed plan lists:
+
+- Cursor
+- GitHub Copilot
+- Claude Code
+- OpenAI Codex
+- Windsurf
+- Lovable
+- Replit
+- v0
+- Bolt
+- DigitalOcean
+- Hostinger
+- Make
+
+The broader repository research dataset also contains the currently validated AI/local-AI seed set.
+
+### Live state
+
+Owner-confirmed current live seed:
+
+> **Cursor only.**
+
+Do not assume repository seed files equal live Supabase rows.
+
+Before publication decisions, verify live Supabase state separately.
+
+### Seed principle
+
+```text
+Verified fact → store
+Unknown fact → null / unknown
+Unverified claim → do not fabricate
+```
+
+---
+
+## 20. Phase History
+
+### Foundation / early intelligence work
+
+Completed:
+
+- Intelligence database foundation
+- Schema v2 dataset compatibility
+- atomic seed import RPC
+- seed importer/validation
+- controlled product publication
+- `/tools` catalog
+- product detail
+- reusable comparison engine
+- deterministic Advisor
+- Advisor MVP UI/API
+- Advisor pricing/unknown-scoring fixes
+
+### Phase 5C — AI Explanation / Personalization
+
+Completed:
+
+- server-only AI provider abstraction
+- DeepSeek provider
+- sanitized AI context
+- strict AI output contract
+- offline privacy behavior
+- provider failure isolation
+- AI rate limiting
+- AI tests
+
+### Phase 6B / 6B.x
+
+Completed repository work includes the multi-resolution / UX / parse robustness and related engineering changes present on `technaam-intelligence`.
+
+The exact phase boundary must always be verified from Git history and current code rather than inferred from chat.
+
+### Phase 6C
+
+Current state:
+
+- Phase 6C baseline is present.
+- Master Roadmap has been approved and committed.
+- Phase 6C → Phase 7 Readiness Audit has been produced.
+- Large-scale OpenClaw catalog expansion is **not yet authorized**.
+- Cursor remains the only owner-confirmed live seed.
+
+---
+
+## 21. Phase 6C → Phase 7 Readiness Gate
+
+Before OpenClaw scale, TechNaam requires a foundation amendment.
+
+The detailed audit is:
+
+`docs/TECHNAAM_PHASE6C_TO_PHASE7_READINESS_AUDIT.md`
+
+The primary required foundation areas are:
+
+### P0
+
+1. Extensible technology taxonomy.
+2. General technology relationship graph.
+3. OS/version/edition foundation.
+4. Hardware entity foundation.
+5. Scalable evidence/change workflow.
+6. Commercial intelligence foundation separated from scoring.
+
+### P1
+
+7. Retail offer/price-comparison model.
+8. Store/seller reputation model.
+9. Effective-cost model.
+10. Advisor/Compare/Compatibility integration.
+11. OpenClaw ingestion and approval contract.
+
+---
+
+## 22. Technology Taxonomy Expansion
+
+Current product typing is optimized for AI/developer tools.
+
+Future TechNaam must represent broader technology categories, including:
+
+- software
+- AI service
+- AI model
+- application
+- operating system
+- OS version/edition
+- laptop
+- desktop
+- workstation
+- CPU
+- GPU
+- RAM
+- storage
+- smartphone
+- tablet
+- wearable
+- cloud service
+- hosting
+- database
+- API
+- framework
+- library
+- developer platform
+- retailer/store
+- peripheral
+- networking equipment
+- other technology entities
+
+Do not solve long-term taxonomy growth by repeatedly adding uncontrolled hard-coded constraints.
+
+Use a controlled taxonomy architecture.
+
+---
+
+## 23. Technology Graph
+
+TechNaam needs explicit relationships such as:
+
+```text
+supports
+requires
+runs_on
+depends_on
+integrates_with
+compatible_with
+alternative_to
+replaces
+part_of
+powered_by
+uses_model
+requires_hardware
+```
+
+Examples:
+
+```text
+Software
+  → runs_on → Operating System
+
+Application
+  → runs_on → Smartphone
+
+AI Model
+  → requires → GPU / VRAM
+
+Technology A
+  → alternative_to → Technology B
+```
+
+This graph is a core future intelligence asset.
+
+Do not encode major compatibility relationships only in free text.
+
+---
+
+## 24. Operating System Intelligence
+
+Current hardware requirements contain `operating_systems text[]`.
+
+That remains useful as a compatibility input but is insufficient as the long-term model.
+
+Future OS intelligence must distinguish:
+
+- operating system
+- version
+- edition
+- minimum supported
+- recommended
+- unsupported
+- unknown
+- end-of-support
+
+Target families include:
+
+- Windows
+- macOS
+- Linux distributions
+- Android
+- iOS
+
+Do not publish compatibility claims without evidence.
+
+---
+
+## 25. Hardware Intelligence
+
+`hardware_requirements` remains a requirements table.
+
+It should not become the entire hardware catalog.
+
+Future hardware entities should include:
+
+- CPU
+- GPU
+- RAM
+- VRAM
+- storage
+- chipset
+- architecture
+- laptop
+- desktop
+- workstation
+- smartphone
+- tablet
+- peripheral
+
+Separate:
+
+```text
+Hardware Product
+```
+
+from:
+
+```text
+Hardware Requirement
+```
+
+---
+
+## 26. Mobile Intelligence
+
+Mobile must eventually become a first-class technology domain.
+
+Required concepts include:
+
+- Android phones
+- iPhones
+- tablets
+- manufacturers
+- exact models
+- generations
+- RAM
+- storage
+- chipset
+- GPU
+- OS version
+- update/support lifecycle
+- app compatibility
+- AI capabilities
+- regional availability
+- prices
+- retailer offers
+
+Example business behavior:
+
+```text
+Premium recommendation
+    vs
+Lower-cost compatible alternative
+```
+
+The system must judge based on user requirements and evidence, not merely brand prestige.
+
+---
+
+## 27. Retail Price Intelligence
+
+Vendor subscription pricing and retailer product pricing are different domains.
+
+Future retail offers must support:
+
+- exact product
+- exact model/variant
+- RAM/storage where relevant
+- seller/store
+- region
+- currency
+- price
+- tax
+- shipping
+- availability
+- warranty
+- return policy
+- offer URL
+- checked timestamp
+- condition
+
+Do not compare two offers merely because their marketing names look similar.
+
+---
+
+## 28. Store / Seller Reputation
+
+Store quality is independent of product quality.
+
+Future deal intelligence should distinguish:
+
+- lowest price
+- best deal
+- most trusted seller
+
+Potential signals:
+
+- official seller status
+- reputation
+- warranty
+- return policy
+- availability
+- price
+- seller quality
+- regional suitability
+
+The system must explain why an offer is preferred.
+
+---
+
+## 29. Evidence / Provenance / Change Detection
+
+The current evidence foundation should evolve for OpenClaw scale.
+
+Future requirements:
+
+- controlled entity types
+- source priority
+- evidence versioning
+- conflict handling
+- stale-data detection
+- verification timestamps
+- review status
+- change detection
+- audit trail
+- approval workflow
+
+OpenClaw must create evidence-backed proposals rather than silently making unsupported changes.
+
+---
+
+## 30. OpenClaw Operating Model
+
+OpenClaw is intended to reduce repetitive research/catalog work.
+
+Target flow:
+
+```text
+DISCOVER
+   ↓
+RESEARCH
+   ↓
+COLLECT EVIDENCE
+   ↓
+NORMALIZE
+   ↓
+DETECT CONFLICTS/CHANGES
+   ↓
+PROPOSE
+   ↓
+HUMAN APPROVAL
+   ↓
+PUBLISH / UPDATE
+```
+
+OpenClaw is not the final authority over TechNaam's recommendation methodology.
+
+---
+
+## 31. OpenClaw Authority Levels
+
+### Level 1 — Automatic
+
+Examples:
+
+- discover candidate technology
+- find changed source
+- detect broken source URL
+- flag stale record
+- create research task
+- propose non-public draft
+
+### Level 2 — Human approval
+
+Examples:
+
+- new product publication
+- pricing update
+- compatibility update
+- affiliate/commercial update
+- store reputation update
+- score-affecting fact
+- sponsored placement
+
+### Level 3 — Owner / human policy authority
+
+Examples:
+
+- recommendation methodology
+- scoring weights
+- benchmark methodology
+- sponsorship policy
+- commercial policy
+- major architecture changes
+- TechNaam-owned product strategy
+- changing the source-of-truth principles
+
+---
+
+## 32. OpenClaw Catalog Expansion
+
+Do not jump directly from a tiny verified catalog to uncontrolled scale.
+
+Recommended progression:
+
+```text
+Cursor
+  ↓
+10 verified
+  ↓
+20 verified
+  ↓
+50 verified
+  ↓
+100+
+  ↓
+continuous OpenClaw-assisted catalog
+```
+
+Each expansion must validate:
+
+- data quality
+- evidence quality
+- compatibility
+- recommendation quality
+- price accuracy
+- commercial separation
+- performance
+- user usefulness
+
+---
+
+## 33. Definition of OpenClaw-Ready
+
+TechNaam becomes OpenClaw-ready when:
+
+- technology types are extensible;
+- technology relationships are explicit;
+- OS/version entities exist;
+- hardware entities exist;
+- evidence workflow scales;
+- source priority is defined;
+- commercial intelligence is isolated;
+- retailer offers have a proper model;
+- store/seller reputation has a proper model;
+- publication requires appropriate approval;
+- agent permissions are defined;
+- conflicts have deterministic handling;
+- stale facts can be detected;
+- audit logs exist;
+- existing Advisor/Compare/Roast pass regression tests.
+
+---
+
+## 34. Immediate Next Phase
+
+### Phase 6C.1 — Technology Intelligence Foundation Amendment
+
+Scope:
+
+1. taxonomy expansion;
+2. technology relationships;
+3. OS/version foundation;
+4. hardware entity foundation;
+5. evidence/change workflow;
+6. commercial intelligence foundation;
+7. tests;
+8. regression verification.
+
+Do NOT build the complete retailer marketplace or full OpenClaw automation in this phase.
+
+Build the foundation that makes those systems possible.
+
+---
+
+## 35. Later Phases
+
+### Phase 6C.2
+
+Retail price + store/seller intelligence foundation.
+
+### Phase 6C.3
+
+Effective-cost calculator.
+
+### Phase 6C.4
+
+Advisor / Compare / Compatibility integration.
+
+### Phase 6C.5
+
+OpenClaw ingestion + human-approval contract.
+
+### Phase 6C.6
+
+OpenClaw pilot with a small approved catalog.
+
+### Phase 7
+
+Continuous Technology Intelligence / OpenClaw operations.
+
+---
+
+## 36. Security Rules — DO NOT BREAK
+
+1. Never expose `SUPABASE_SERVICE_ROLE_KEY`.
+2. Never commit secrets or credential-bearing URLs.
+3. Never expose private evidence, sources, pricing history, or change logs.
+4. Never use affiliate commissions to influence recommendations.
+5. Always validate user input server-side.
+6. Never trust client-supplied scores.
+7. Never trust client-supplied prices.
+8. Do not bypass RLS for public features.
+9. Do not expose unpublished products publicly.
+10. Do not create unrestricted public write access.
+11. Do not modify `main` without explicit approval.
+12. Do not publish products without required approval.
+13. Preserve source/provenance rules.
+14. Do not fabricate unknown facts.
+15. Do not let AI silently override deterministic decisions.
+
+---
+
+## 37. Coding Agent Rules
+
+For Google Jules, Codex, OpenClaw coding tasks, and future agents:
+
+1. Read `docs/TECHNAAM_MASTER_ROADMAP.md`.
+2. Read this handoff.
+3. Read the active phase audit/specification.
+4. Inspect before editing.
+5. Understand existing architecture before changing it.
+6. Make minimal targeted changes.
+7. Preserve existing behavior unless the phase explicitly changes it.
+8. Do not modify LegalSphere unless explicitly requested.
+9. Do not modify existing marketing pages unless explicitly requested.
+10. Do not modify Supabase migrations unless the active phase requires them.
+11. Do not publish products unless explicitly authorized.
+12. Never expose secrets.
+13. Run relevant tests.
+14. Run build before committing substantial changes.
+15. Review `git diff`.
+16. Report exact files changed.
+17. Report tests/build/lint results.
+18. Report Supabase/schema status.
+19. Report publication status.
+20. Report Git commit/push status.
+21. Update this handoff after completing the phase.
+22. Record known limitations honestly.
+23. Do not rewrite strategic policy without owner approval.
+24. Stop and request clarification if requirements conflict with security or architectural rules.
+
+---
+
+## 38. Jules Phase Completion Procedure
+
+At the beginning:
+
+1. Sync `technaam-intelligence`.
+2. Read Master Roadmap.
+3. Read this handoff.
+4. Read active phase specification/audit.
+5. Inspect current code and Git state.
+
+During implementation:
+
+6. Make only approved scope changes.
+7. Preserve public/private boundaries.
+8. Preserve deterministic recommendation authority.
+9. Preserve commercial isolation.
+10. Add regression tests for changed behavior.
+
+Before completion:
+
+11. Run relevant tests.
+12. Run build.
+13. Run lint when applicable.
+14. Review `git diff`.
+15. Verify no secrets are included.
+16. Verify publication state.
+17. Verify Supabase changes if applicable.
+18. Update this handoff.
+19. Report exact changed files.
+20. Commit/push according to the approved workflow.
+21. Test Vercel Preview when applicable.
+
+After completion:
+
+22. Update the Current Phase Status block.
+23. Set the next phase.
+24. Record the exact commit.
+25. Do not merge `main` without explicit owner approval.
+
+---
+
+## 39. Testing
+
+Known commands include:
+
+- `npm run test:advisor`
+- `npm run test:advisor-api`
+- `npm run test:advisor-ai`
+- `npm run validate:seed`
+- `npm run build`
+- `npm run lint`
+
+Full HTTP smoke testing can use:
 
 ```bash
 npm run start
 ```
 
-Then post JSON to `http://localhost:3000/api/advisor`.
+Then test:
 
-## 17. Current Known Limitations
-
-Verified from the repository:
-
-- `getAdvisorCatalog()` performs one detail lookup per published product.
-- The advisor rate limiter is in-memory and not shared across serverless instances.
-- Node advisor test scripts emit a non-fatal `MODULE_TYPELESS_PACKAGE_JSON` warning when importing TypeScript directly.
-- Pre-existing ESLint errors exist in `src/app/about/page.tsx` and `src/app/contact/page.tsx`.
-
-## 18. Current Product Publication Status
-
-The repository enforces publication safety:
-
-- Seed import defaults records to unpublished.
-- The publication RPC publishes only the selected product and required public dependencies.
-- Public detail links are created only for published products.
-
-Live row-level publication state is stored in Supabase and cannot be fully
-verified from the repository alone. Verify live state through the Supabase
-dashboard or a read-only API query before publishing decisions.
-
-## 19. Completed TechNaam Intelligence Phases
-
-Completed work present in the repository:
-
-- Intelligence database foundation
-- Schema v2 dataset compatibility
-- Atomic seed import RPC
-- Seed importer and validation
-- Product publication RPC
-- `/tools` catalog
-- `/tools/[slug]` detail pages
-- Reusable comparison engine
-- Deterministic advisor engine
-- Advisor MVP UI and API
-- Advisor pricing and unknown-scoring fix
-
-## 20. Next Planned Work
-
-Phase 5C — AI Explanation / Personalization Layer.
-
-Architectural principle:
-
-- Deterministic engine = authoritative decision.
-- LLM = explanation/personalization layer.
-
-The future LLM layer must not:
-
-- silently override deterministic scores
-- invent product capabilities
-- invent prices
-- use affiliate relationships to influence recommendations
-
-## 21. Coding Agent Instructions
-
-For Google Jules, Codex, and future coding agents:
-
-1. Inspect before editing.
-2. Make minimal targeted changes.
-3. Preserve existing architecture.
-4. Do not modify unrelated systems.
-5. Do not modify LegalSphere unless explicitly requested.
-6. Do not modify existing marketing pages unless explicitly requested.
-7. Do not modify Supabase migrations unless explicitly requested.
-8. Do not publish products unless explicitly requested.
-9. Never expose secrets.
-10. Run relevant tests after changes.
-11. Run build before committing substantial changes.
-12. Do not merge into `main` without explicit approval.
-13. Keep development work on `technaam-intelligence` unless instructed otherwise.
-14. Report exact files changed.
-15. Report tests/build/lint results.
-16. Report Supabase status.
-17. Report publication status.
-18. Report Git commit/push status.
-19. Stop and ask for clarification if requirements conflict with existing architecture or security rules.
-
-## 22. Jules Handoff Procedure
-
-1. Checkout/sync `technaam-intelligence`.
-2. Read this handoff document.
-3. Inspect relevant files before editing.
-4. Understand the existing architecture.
-5. Make only requested changes.
-6. Run tests.
-7. Run build.
-8. Review `git diff`.
-9. Report changes.
-10. Commit only after approval when required.
-11. Push to `technaam-intelligence`.
-12. Test Vercel Preview.
-13. Do not merge `main` without explicit approval.
-
-## 23. Handoff Checklist
-
-- [ ] Read this handoff document.
-- [ ] Inspect the current branch.
-- [ ] Inspect relevant implementation files.
-- [ ] Check `git status`.
-- [ ] Understand the Supabase/RLS boundary.
-- [ ] Preserve secrets and env files.
-- [ ] Preserve publication rules.
-- [ ] Run tests.
-- [ ] Run build.
-- [ ] Review diff.
-- [ ] Report results.
-- [ ] Keep `main` protected.
-
-## 24. Last Verified State
-
-- Current branch: `technaam-intelligence`
-- Latest relevant commits:
-  - `f177547` — Fix advisor pricing and unknown scoring
-  - `f1fce5d` — Build TechNaam Stack Advisor MVP
-  - `119dcda` — Build reusable comparison engine
-- Current routes include `/tools`, `/tools/[slug]`, `/compare/[comparison]`,
-  `/advisor`, and `/api/advisor`.
-- Advisor scoring version: `v1`.
-- Advisor pricing fix is present after `f177547`.
-- Comparison engine is present after `119dcda`.
-- Tools catalog/detail routes are present.
-- Known tests: `test:advisor`, `test:advisor-api`, and `validate:seed`.
-- Known limitations are listed in section 17.
-- Live Supabase row state: not verified from repository.
-
-## 25. Phase 5C — AI Explanation / Personalization Layer
-
-Phase 5C adds a server-only DeepSeek explanation layer around the deterministic
-Advisor. The deterministic engine remains authoritative.
-
-### Provider
-
-- Provider abstraction: `AIProvider` interface in
-  `src/lib/advisor/ai/types.ts`
-- DeepSeek implementation: `DeepSeekProvider` in
-  `src/lib/advisor/ai/provider.ts`
-- Exact model identifier: `deepseek-v4-flash`
-
-### Endpoint
-
-- `POST /api/advisor/explain`
-- The browser sends validated `AdvisorInput` only.
-- The server revalidates input, recomputes the deterministic
-  `AdvisorResult`, sanitizes context, and calls DeepSeek.
-- The client cannot supply `AdvisorResult`.
-
-### Sanitized Context
-
-- Explicit whitelist in `src/lib/advisor/ai/context.ts`.
-- Only approved input fields and the top 3 recommendations enter AI context.
-- No product IDs, slugs, internal IDs, affiliate data, evidence, private
-  sources, pricing history, change logs, or unpublished product data are sent.
-
-### Output Contract
-
-DeepSeek returns only:
-
-```json
-{
-  "summary": "string",
-  "product_explanations": [
-    { "why_it_fits": "string", "considerations": "string" }
-  ],
-  "uncertainty_note": "string"
-}
+```text
+http://localhost:3000/api/advisor
 ```
 
-Score, ranking, price, plan, product ID, slug, and URL remain authoritative in
-the deterministic UI response.
+Relevant phase-specific tests must be added as the architecture expands.
 
-### Privacy
+---
 
-- `privacy_requirement === "offline"` skips the provider call and returns
-  `{ available: false, reason: "offline" }`.
-- No Advisor data is persisted or stored in Supabase.
+## 40. Known Limitations
 
-### Failure Behavior
+Current known limitations include:
 
-- DeepSeek timeout, 4xx/5xx, malformed JSON, invalid schema, empty response, and
-  provider unavailability return `{ available: false, reason: "provider_unavailable" }`.
-- Deterministic Advisor results render independently of AI availability.
+- Advisor catalog lookup may perform one detail lookup per published product.
+- Advisor and AI rate limiting are lightweight in-memory limits and are not shared across serverless instances.
+- Some Node/TypeScript test execution may emit non-fatal module-type warnings.
+- Existing unrelated ESLint errors may exist outside the active intelligence scope.
+- Live Supabase row state cannot be assumed from repository seed files.
+- Current product taxonomy is not yet sufficient for the full hardware/mobile/OS technology universe.
+- Retail offers/store reputation are not yet first-class intelligence domains.
+- Full Technology Graph is not yet implemented.
+- OpenClaw continuous ingestion is not yet authorized/implemented.
 
-### Rate Limiting
+These limitations must be updated as they are resolved.
 
-- Lightweight in-memory sliding window for `/api/advisor/explain`.
-- 10 requests per 60 seconds per client key.
-- Per serverless instance; replaceable later.
+---
 
-### Tests
+## 41. Current Phase Status
 
-- `npm run test:advisor-ai`
-- Tests exercise the actual sanitizer, provider, output validator, and rate
-  limiter with mocked `fetch`. No live DeepSeek key is required.
+### Completed
 
-### Known Limitations
+- Phase 5C — AI Explanation / Personalization
+- Phase 6C baseline and related repository work
+- Approved Master Roadmap
+- Phase 6C → Phase 7 Readiness Audit
 
-- DeepSeek availability is external and may be unavailable.
-- The explanation layer is not persisted or cached.
-- The rate limiter is not shared across serverless instances.
+### Current
+
+**Phase 6C.1 — Technology Intelligence Foundation Amendment**
+
+Status:
+
+> **Ready for implementation; not yet implemented.**
+
+### Next
+
+- Phase 6C.2 — Retail Price + Store/Seller Intelligence
+- Phase 6C.3 — Effective Cost
+- Phase 6C.4 — Advisor/Compare/Compatibility Integration
+- Phase 6C.5 — OpenClaw Ingestion + Approval Contract
+- Phase 6C.6 — OpenClaw Pilot
+- Phase 7 — Continuous Technology Intelligence
+
+### Verification
+
+- Tests: current repository test suite must be rerun before the next substantial implementation.
+- Build: rerun before Phase 6C.1 commit.
+- Lint: rerun and distinguish pre-existing unrelated failures.
+- Supabase: live row state requires explicit verification.
+- Publication: Cursor is the only owner-confirmed live seed.
+- Git: `technaam-intelligence` is the active development branch; `main` remains protected.
+
+### Known limitations
+
+See Section 40 and the Phase 6C → Phase 7 Readiness Audit.
+
+### Updated
+
+`2026-08-29`
+
+---
+
+# FINAL HANDOFF PRINCIPLE
+
+TechNaam should become:
+
+> **A source-of-truth technology intelligence system, not merely a product list.**
+
+The real asset is:
+
+```text
+FACTS
+  +
+SOURCES
+  +
+EVIDENCE
+  +
+RELATIONSHIPS
+  +
+COMPATIBILITY
+  +
+PRICES
+  +
+STORE TRUST
+  +
+COMMERCIAL OPPORTUNITIES
+  +
+USER REQUIREMENTS
+  +
+DETERMINISTIC METHODOLOGY
+```
+
+OpenClaw maintains the intelligence.
+
+TechNaam's deterministic system reasons from it.
+
+AI explains and personalizes it.
+
+Humans govern the rules.
+
+Commercial opportunities follow the truth; they do not redefine it.
