@@ -1422,3 +1422,32 @@ Commercial opportunities follow the truth; they do not redefine it.
 
 ### Updated
 `2026-08-29`
+
+---
+
+## 43. Phase 6C.2 & 6C.3 Implementation Log
+
+### Completed
+- Phase 6C.2 Retail Price + Store/Seller Intelligence Foundation (MERGED AND DEPLOYED).
+- Phase 6C.3 Effective Cost Intelligence Foundation.
+
+### Architecture Implemented (Phase 6C.3)
+- `src/lib/pricing/types.ts`: Core pricing definitions mapping `retail_offers` and `pricing_plans`.
+- `src/lib/pricing/retail-cost.ts`: Deterministic calculation of retail effective costs (Price + Shipping).
+- `src/lib/pricing/subscription-cost.ts`: Deterministic normalized subscription effective cost. Explicitly unsupports `usage_based` logic.
+- `src/lib/queries/commercial-pricing.ts`: Read-only queries leveraging RLS.
+- Tests executed against the pricing domain successfully.
+- Migration `20260826060000_phase6c3_retail_pricing_index.sql` created for composite lookup index optimization.
+
+### Strict Commercial Isolation Maintained
+- No tax manipulation.
+- No currency conversion logic.
+- No trust-score pricing adjustment.
+- Zero references to affiliate_programs or partner_agreements.
+- Existing Advisor, Roast, Compare, UI engines remained untouched.
+
+### Next Phase
+- Phase 6C.4 — Advisor/Compare/Compatibility Integration
+
+### Updated
+`2026-08-29`
