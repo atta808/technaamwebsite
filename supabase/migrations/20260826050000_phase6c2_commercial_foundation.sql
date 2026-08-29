@@ -5,6 +5,9 @@
 
 create schema if not exists commercial;
 
+-- Ensure public Supabase roles can access the custom schema
+grant usage on schema commercial to anon, authenticated;
+
 -- 1. Stores (Retailers / Marketplaces / Official Vendors)
 create table commercial.stores (
     id uuid primary key default gen_random_uuid(),
@@ -34,6 +37,7 @@ create policy "Active stores are public" on commercial.stores
     for select using (is_active = true);
 create policy "Service role can do all to stores" on commercial.stores
     for all to service_role using (true) with check (true);
+grant select on commercial.stores to anon, authenticated;
 
 
 -- 2. Sellers (Marketplace 3rd-party entities)
@@ -66,6 +70,7 @@ create policy "Active sellers in active stores are public" on commercial.sellers
     );
 create policy "Service role can do all to sellers" on commercial.sellers
     for all to service_role using (true) with check (true);
+grant select on commercial.sellers to anon, authenticated;
 
 
 -- 3. Retail Offers (Exact commercial variants matched to technology_entities)
@@ -118,3 +123,4 @@ create policy "Published offers on published entities are public" on commercial.
     );
 create policy "Service role can do all to retail offers" on commercial.retail_offers
     for all to service_role using (true) with check (true);
+grant select on commercial.retail_offers to anon, authenticated;
