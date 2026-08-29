@@ -44,7 +44,7 @@ alter table public.technology_entities enable row level security;
 create policy "Published technology entities are public" on public.technology_entities
   for select using (is_published = true);
 create policy "Service role can do all to technology entities" on public.technology_entities
-  for all using (true) with check (true);
+  for all to service_role using (true) with check (true);
 
 
 -- 3. Hardware Entities
@@ -70,7 +70,7 @@ create policy "Hardware entities are readable if anchor is published" on public.
     exists (select 1 from public.technology_entities t where t.id = tech_entity_id and t.is_published = true)
   );
 create policy "Service role can do all to hardware entities" on public.hardware_entities
-  for all using (true) with check (true);
+  for all to service_role using (true) with check (true);
 
 
 -- 4. OS Entities
@@ -96,7 +96,7 @@ create policy "OS entities are readable if anchor is published" on public.os_ent
     exists (select 1 from public.technology_entities t where t.id = tech_entity_id and t.is_published = true)
   );
 create policy "Service role can do all to OS entities" on public.os_entities
-  for all using (true) with check (true);
+  for all to service_role using (true) with check (true);
 
 
 -- 5. Link existing Products
@@ -120,7 +120,7 @@ $$;
 
 
 -- 6. Link existing Evidence / Change Log non-destructively
-alter table public.evidence add column tech_entity_id uuid references public.technology_entities(id) on delete cascade;
+alter table public.evidence add column tech_entity_id uuid references public.technology_entities(id) on delete restrict;
 create index evidence_tech_entity_idx on public.evidence(tech_entity_id);
 
 -- Backfill Evidence (mapping polymorphic entity_id when it equals product.id)
@@ -129,7 +129,7 @@ set tech_entity_id = p.tech_entity_id
 from public.products p
 where e.entity_type = 'product' and e.entity_id = p.id;
 
-alter table public.change_log add column tech_entity_id uuid references public.technology_entities(id) on delete cascade;
+alter table public.change_log add column tech_entity_id uuid references public.technology_entities(id) on delete restrict;
 create index change_log_tech_entity_idx on public.change_log(tech_entity_id);
 
 -- Backfill Change Log
@@ -176,4 +176,4 @@ create policy "Approved relationships between published entities are public" on 
     exists (select 1 from public.technology_entities t where t.id = target_entity_id and t.is_published = true)
   );
 create policy "Service role can do all to relationships" on public.tech_relationships
-  for all using (true) with check (true);
+  for all to service_role using (true) with check (true);
