@@ -1412,8 +1412,9 @@ Commercial opportunities follow the truth; they do not redefine it.
 
 ### Production Migration Audit
 - Completed the Phase 6C.1 Production Migration Baseline Audit (`docs/TECHNAAM_PHASE6C1_PRODUCTION_BASELINE_PLAN.md`).
-- Verified that production is at the pre-6C.1 state (10 products, 71 evidence rows, matching the first 4 migrations).
-- Proposed using `supabase db pull --linked` to establish migration history on production non-destructively, prior to pushing `040000` and `040001`.
+- Verified that production substantially represents the pre-6C.1 state (10 products, 71 evidence rows).
+- Recommended `supabase migration repair --status applied` as the baseline strategy (Strategy B) since Docker is not available and migration history needs to be injected without replaying SQL payloads.
+- Outlined a mandatory Final Parity Check requirement for the owner to manually verify complete schema/RLS/RPC parity between production and migrations `000000`-`030000` before authorizing the repair.
 - Phase 6C.2 is strictly deferred until this audit proposal is executed and verified by the owner. No production databases were modified.
 
 ### Next Phase
