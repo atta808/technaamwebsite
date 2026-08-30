@@ -91,6 +91,10 @@ function resolveEffectiveMonthlyCost(plan: PricingPlan, teamSize: number): numbe
     return null;
   }
 
+  if (result.targetPeriod === "one_time") {
+    return null;
+  }
+
   const team = Math.max(1, Math.round(teamSize));
   if (result.isPerUser && result.perUserPrice !== null) {
     return result.perUserPrice * team;
