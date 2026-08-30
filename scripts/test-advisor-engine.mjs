@@ -81,6 +81,26 @@ assert.equal(
   "free plan should produce zero cost"
 );
 
+const oneTimeProduct = product({
+  pricing: [
+    {
+      name: "Lifetime",
+      price: 300,
+      currency: "USD",
+      billing_period: "one_time",
+      is_per_user: false,
+      is_free: false,
+      price_model: "flat",
+    },
+  ],
+});
+
+assert.equal(
+  normalizeMonthlyCost(oneTimeProduct.pricing, 1),
+  null,
+  "one_time plan should not be treated as a recurring monthly cost"
+);
+
 const perUserProduct = product({
   pricing: [
     {

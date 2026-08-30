@@ -3,6 +3,8 @@ import type {
   AdvisorProduct,
   PricingPlan,
 } from "./types";
+import { calculateSubscriptionEffectiveCost } from "../pricing/subscription-cost";
+import type { BillingPeriod, PricingPlanInput } from "../pricing/types";
 
 export const SCORING_VERSION = "v1";
 
@@ -57,31 +59,61 @@ function featureState(
   return "unknown";
 }
 
+function resolveEffectiveMonthlyCost(plan: PricingPlan, teamSize: number): number | null {
+  if (plan.price === null) return null;
+  if (plan.price_model === "usage_based" || plan.price_model === "custom") return null;
+
+  const validBillingPeriod = plan.billing_period as BillingPeriod | null;
+
+  if (plan.is_free) {
+     return 0;
+  }
+
+  if (!validBillingPeriod) {
+    if (plan.price === 0) {
+      return 0;
+    }
+    return null;
+  }
+
+  const planInput: PricingPlanInput = {
+    id: "temp",
+    name: plan.name,
+    currency: plan.currency,
+    price: plan.price,
+    billing_period: validBillingPeriod,
+    is_per_user: plan.is_per_user,
+    per_user_price: plan.is_per_user ? plan.price : 0,
+  };
+
+  const result = calculateSubscriptionEffectiveCost(planInput, { targetPeriod: "monthly" });
+  if (result.status !== "supported" || result.effectiveCost === null) {
+    return null;
+  }
+
+  if (result.targetPeriod === "one_time") {
+    return null;
+  }
+
+  const team = Math.max(1, Math.round(teamSize));
+  if (result.isPerUser && result.perUserPrice !== null) {
+    return result.perUserPrice * team;
+  }
+
+  return result.effectiveCost;
+}
+
 export function normalizeMonthlyCost(
   pricing: PricingPlan[],
   teamSize: number
 ): number | null {
-  const team = Math.max(1, Math.round(teamSize));
   const candidates: number[] = [];
 
   for (const plan of pricing) {
-    if (plan.price === null) {
-      continue;
+    const cost = resolveEffectiveMonthlyCost(plan, teamSize);
+    if (cost !== null) {
+      candidates.push(cost);
     }
-
-    if (plan.price_model === "usage_based" || plan.price_model === "custom") {
-      continue;
-    }
-
-    let cost = plan.price;
-    if (plan.billing_period === "annual") {
-      cost = plan.price / 12;
-    }
-    if (plan.is_per_user) {
-      cost = cost * team;
-    }
-
-    candidates.push(cost);
   }
 
   if (candidates.length === 0) {
@@ -100,21 +132,7 @@ export type RecommendedPlanSelection = {
 };
 
 function planMonthlyCost(plan: PricingPlan, teamSize: number): number | null {
-  if (plan.price === null) {
-    return null;
-  }
-  if (plan.price_model === "usage_based" || plan.price_model === "custom") {
-    return null;
-  }
-
-  let cost = plan.price;
-  if (plan.billing_period === "annual") {
-    cost = plan.price / 12;
-  }
-  if (plan.is_per_user) {
-    cost = cost * Math.max(1, Math.round(teamSize));
-  }
-  return cost;
+  return resolveEffectiveMonthlyCost(plan, teamSize);
 }
 
 export function selectRecommendedPlan(

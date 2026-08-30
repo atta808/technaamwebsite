@@ -57,6 +57,7 @@ export type ProductDetail = {
   id: string;
   slug: string;
   name: string;
+  tech_entity_id: string | null;
   product_type: string | null;
   description: string | null;
   website_url: string | null;
@@ -83,7 +84,7 @@ export async function getProductDetailBySlug(slug: string): Promise<ProductDetai
   const { data: productData, error: productError } = await supabase
     .from("products")
     .select(
-      "id, slug, name, product_type, description, website_url, vendor:vendors(name, slug, website_url), category:categories(name, slug)"
+      "id, tech_entity_id, slug, name, product_type, description, website_url, vendor:vendors(name, slug, website_url), category:categories(name, slug)"
     )
     .eq("slug", slug)
     .eq("is_published", true)
@@ -97,6 +98,7 @@ export async function getProductDetailBySlug(slug: string): Promise<ProductDetai
 
   const rawProduct = productData as unknown as {
     id: string;
+    tech_entity_id: string | null;
     slug: string;
     name: string;
     product_type: string | null;
@@ -215,6 +217,7 @@ export async function getProductDetailBySlug(slug: string): Promise<ProductDetai
     id: productId,
     slug: rawProduct.slug,
     name: rawProduct.name,
+    tech_entity_id: rawProduct.tech_entity_id,
     product_type: rawProduct.product_type,
     description: rawProduct.description,
     website_url: rawProduct.website_url,
