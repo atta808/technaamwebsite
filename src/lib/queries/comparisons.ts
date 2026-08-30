@@ -2,10 +2,18 @@ import {
   getProductDetailBySlug,
   type ProductDetail,
 } from "@/lib/queries/product-detail";
+import { getRetailOffersForTechEntity } from "@/lib/queries/commercial-pricing";
+import { calculateRetailEffectiveCost } from "@/lib/pricing/retail-cost";
+import type { RetailEffectiveCost } from "@/lib/pricing/types";
 
 export type ComparisonProduct = ProductDetail;
 
 export type ComparisonStatus = "ready" | "unavailable" | "invalid";
+
+export type CommercialContext = {
+  offers: RetailEffectiveCost[];
+  lowest_effective_cost: RetailEffectiveCost | null;
+};
 
 export type ComparisonResult = {
   comparisonSlug: string;
@@ -13,6 +21,7 @@ export type ComparisonResult = {
   rightSlug: string;
   status: ComparisonStatus;
   products: [ComparisonProduct | null, ComparisonProduct | null];
+  commercial_context: [CommercialContext | null, CommercialContext | null];
   unavailable: string[];
   reason: string | null;
 };
@@ -66,6 +75,7 @@ export async function getComparison(comparisonSlug: string): Promise<ComparisonR
       rightSlug: "",
       status: "invalid",
       products: [null, null],
+      commercial_context: [null, null],
       unavailable: [],
       reason: "Malformed comparison slug.",
     };
@@ -81,6 +91,7 @@ export async function getComparison(comparisonSlug: string): Promise<ComparisonR
       rightSlug: parsed.rightSlug,
       status: "invalid",
       products: [null, null],
+      commercial_context: [null, null],
       unavailable: [],
       reason: "A product cannot be compared with itself.",
     };
@@ -96,12 +107,34 @@ export async function getComparison(comparisonSlug: string): Promise<ComparisonR
     rightProduct ? null : parsed.rightSlug,
   ].filter(Boolean) as string[];
 
+  const commercialContexts: [CommercialContext | null, CommercialContext | null] = [null, null];
+
+  if (leftProduct && rightProduct) {
+    const [leftOffers, rightOffers] = await Promise.all([
+      leftProduct.tech_entity_id ? getRetailOffersForTechEntity(leftProduct.tech_entity_id) : Promise.resolve([]),
+      rightProduct.tech_entity_id ? getRetailOffersForTechEntity(rightProduct.tech_entity_id) : Promise.resolve([]),
+    ]);
+
+    const buildContext = (offers: typeof leftOffers): CommercialContext => {
+      const effectiveCosts = offers.map(calculateRetailEffectiveCost);
+      const sorted = [...effectiveCosts].sort((a, b) => a.effectiveCost - b.effectiveCost);
+      return {
+        offers: effectiveCosts,
+        lowest_effective_cost: sorted[0] ?? null,
+      };
+    };
+
+    commercialContexts[0] = buildContext(leftOffers);
+    commercialContexts[1] = buildContext(rightOffers);
+  }
+
   return {
     comparisonSlug,
     leftSlug: parsed.leftSlug,
     rightSlug: parsed.rightSlug,
     status: leftProduct && rightProduct ? "ready" : "unavailable",
     products: [leftProduct, rightProduct],
+    commercial_context: commercialContexts,
     unavailable,
     reason:
       leftProduct && rightProduct
