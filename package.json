@@ -18,7 +18,8 @@
     "test:roast-ai": "npx tsx scripts/test-roast-ai.mjs",
     "test:roast-parsing": "node scripts/test-roast-parsing.mjs",
     "test:phase6c1": "node scripts/test-phase6c1-foundation.mjs",
-    "test:phase6c3": "npx tsx scripts/test-phase6c3-pricing.ts"
+    "test:phase6c3": "npx tsx scripts/test-phase6c3-pricing.ts",
+    "test:phase7-governance": "node scripts/test-phase7-governance.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
@@ -28,6 +29,7 @@
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.560.0",
     "next": "16.0.10",
+    "pg": "^8.23.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "tailwind-merge": "^3.4.0"

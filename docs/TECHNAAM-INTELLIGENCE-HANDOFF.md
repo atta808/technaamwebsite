@@ -1293,7 +1293,8 @@ These limitations must be updated as they are resolved.
 
 ## 41. Current Phase Status
 
-### Completed
+### Current
+- Phase 7A OpenClaw Governance Foundation (PENDING VERIFICATION)
 
 - Phase 5C — AI Explanation / Personalization
 - Phase 6C baseline and related repository work
@@ -1380,7 +1381,8 @@ Commercial opportunities follow the truth; they do not redefine it.
 
 ## 42. Phase 6C.1 Implementation Log
 
-### Completed
+### Current
+- Phase 7A OpenClaw Governance Foundation (PENDING VERIFICATION)
 - Phase 6C.1 P0 Foundation implementation.
 
 ### Architecture Implemented
@@ -1427,7 +1429,8 @@ Commercial opportunities follow the truth; they do not redefine it.
 
 ## 43. Phase 6C.2 & 6C.3 Implementation Log
 
-### Completed
+### Current
+- Phase 7A OpenClaw Governance Foundation (PENDING VERIFICATION)
 - Phase 6C.2 Retail Price + Store/Seller Intelligence Foundation (MERGED AND DEPLOYED).
 - Phase 6C.3 Effective Cost Intelligence Foundation.
 
@@ -1451,3 +1454,35 @@ Commercial opportunities follow the truth; they do not redefine it.
 
 ### Updated
 `2026-08-29`
+
+---
+
+## 44. Phase 7A Implementation Log
+
+### Current
+- Phase 7A OpenClaw Governance Foundation (PENDING VERIFICATION)
+- Phase 7A OpenClaw Governance Foundation (Pre-Phase 7 Foundation Amendment).
+
+### Architecture Implemented (Phase 7A)
+- Added `agent_contributor` and `agent_reviewer` custom Supabase roles mapped to `authenticator`.
+- Added strictly-typed staging table `public.agent_proposals` to ingest agent candidate submissions safely.
+- Added `public.technology_identifiers` for deterministic external ID collision detection.
+- Added `public.agent_audit_log` for immutable governance logging.
+- Created heavily guarded `SECURITY DEFINER` RPCs to handle state transitions (`submit_agent_proposal`, `approve_agent_proposal`, `promote_technology_proposal`, `promote_relationship_proposal`).
+- Hardcoded `promote_retail_observation` to reject calls (Retail Pilot is explicitly disabled).
+
+### Strict Security Boundaries Maintained
+- Direct `INSERT`/`UPDATE` against canonical domains (`technology_entities`, `tech_relationships`, `commercial.*`) remains blocked for both agent and reviewer client roles.
+- `agent_reviewer` must invoke the `promote_*` RPCs, which atomically resolve provenance and enforce state machines.
+- `agent_proposals` requires clients to invoke the `submit_agent_proposal` RPC, natively coercing `status = 'pending_review'` and linking `auth.uid()` implicitly.
+
+### Next Phase
+- Phase 7 — OpenClaw Pilot Operations (Observational mode only, human-in-the-loop)
+
+### Updated
+`2026-08-30`
+
+### Phase 7A Verification Status: NOT VERIFIED
+- **Condition:** The test script `scripts/test-phase7-governance.mjs` was rewritten to require a real PostgreSQL database instance to explicitly test the `agent_contributor` and `agent_reviewer` PostgREST role boundaries and verify no unauthorized writes are possible.
+- **Result:** Because the sandbox environment lacks Docker/Supabase CLI capability to run a target local database with the Phase 7A schema applied, the integration test gracefully aborts with `NOT VERIFIED`.
+- **Action Required:** This migration and architecture must be run against a real database instance to execute `npm run test:phase7-governance` to completion before it can be marked fully verified and safe for production.
