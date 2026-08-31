@@ -1451,3 +1451,29 @@ Commercial opportunities follow the truth; they do not redefine it.
 
 ### Updated
 `2026-08-29`
+
+---
+
+## 44. Phase 7A Implementation Log
+
+### Completed
+- Phase 7A OpenClaw Governance Foundation (Pre-Phase 7 Foundation Amendment).
+
+### Architecture Implemented (Phase 7A)
+- Added `agent_contributor` and `agent_reviewer` custom Supabase roles mapped to `authenticator`.
+- Added strictly-typed staging table `public.agent_proposals` to ingest agent candidate submissions safely.
+- Added `public.technology_identifiers` for deterministic external ID collision detection.
+- Added `public.agent_audit_log` for immutable governance logging.
+- Created heavily guarded `SECURITY DEFINER` RPCs to handle state transitions (`submit_agent_proposal`, `approve_agent_proposal`, `promote_technology_proposal`, `promote_relationship_proposal`).
+- Hardcoded `promote_retail_observation` to reject calls (Retail Pilot is explicitly disabled).
+
+### Strict Security Boundaries Maintained
+- Direct `INSERT`/`UPDATE` against canonical domains (`technology_entities`, `tech_relationships`, `commercial.*`) remains blocked for both agent and reviewer client roles.
+- `agent_reviewer` must invoke the `promote_*` RPCs, which atomically resolve provenance and enforce state machines.
+- `agent_proposals` requires clients to invoke the `submit_agent_proposal` RPC, natively coercing `status = 'pending_review'` and linking `auth.uid()` implicitly.
+
+### Next Phase
+- Phase 7 — OpenClaw Pilot Operations (Observational mode only, human-in-the-loop)
+
+### Updated
+`2026-08-30`
