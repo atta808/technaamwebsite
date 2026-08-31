@@ -10,16 +10,16 @@
     "validate:seed": "node scripts/validate-technaam-seed.mjs",
     "import:seed": "node scripts/import-technaam-seed.mjs",
     "publish:product": "node scripts/publish-technaam-product.mjs",
-    "test:advisor": "node scripts/test-advisor-engine.mjs",
-    "test:advisor-api": "node scripts/test-advisor-api.mjs",
-    "test:advisor-ai": "node scripts/test-advisor-ai.mjs",
-    "test:roast": "node scripts/test-roast-engine.mjs",
-    "test:roast-api": "npx tsx scripts/test-roast-api.mjs",
-    "test:roast-ai": "npx tsx scripts/test-roast-ai.mjs",
-    "test:roast-parsing": "node scripts/test-roast-parsing.mjs",
-    "test:phase6c1": "node scripts/test-phase6c1-foundation.mjs",
-    "test:phase6c3": "npx tsx scripts/test-phase6c3-pricing.ts",
-    "test:phase7-governance": "node scripts/test-phase7-governance.mjs"
+    "test:advisor": "tsx scripts/test-advisor-engine.mjs",
+    "test:advisor-api": "tsx scripts/test-advisor-api.mjs",
+    "test:advisor-ai": "tsx scripts/test-advisor-ai.mjs",
+    "test:roast": "tsx scripts/test-roast-engine.mjs",
+    "test:roast-api": "tsx scripts/test-roast-api.mjs",
+    "test:roast-ai": "tsx scripts/test-roast-ai.mjs",
+    "test:roast-parsing": "tsx scripts/test-roast-parsing.mjs",
+    "test:phase6c1": "tsx scripts/test-phase6c1-foundation.mjs",
+    "test:phase6c3": "tsx scripts/test-phase6c3-pricing.ts",
+    "test:phase7-governance": "tsx scripts/test-phase7-governance.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
@@ -42,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
