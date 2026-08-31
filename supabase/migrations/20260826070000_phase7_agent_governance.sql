@@ -1,9 +1,9 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- =================================================================================
 -- PHASE 7A — OPENCLAW GOVERNANCE FOUNDATION
 -- Additive Agent Write Boundary
 -- =================================================================================
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. Create Roles and Authenticator Mappings
 DO $$
@@ -64,16 +64,19 @@ CREATE TABLE public.agent_audit_log (
 
 -- 3. Grants and RLS Hardening
 
--- Baseline hardening (Optional but safe for new schemas to ensure explicit grants win out)
 GRANT USAGE ON SCHEMA public TO agent_contributor, agent_reviewer;
+
+-- Defense in depth: explicitly revoke canonical writes
+REVOKE INSERT, UPDATE, DELETE ON public.technology_entities, public.tech_relationships, public.evidence FROM agent_contributor, agent_reviewer;
 GRANT USAGE ON SCHEMA commercial TO agent_contributor, agent_reviewer;
+REVOKE INSERT, UPDATE, DELETE ON commercial.stores, commercial.sellers, commercial.retail_offers FROM agent_contributor, agent_reviewer;
 
 -- RLS Enforcement
 ALTER TABLE public.agent_proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.technology_identifiers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agent_audit_log ENABLE ROW LEVEL SECURITY;
 
--- Contributor SELECT logic (can only read own proposals + canonical data)
+-- Contributor SELECT logic
 CREATE POLICY "Agent contributor can read own proposals" ON public.agent_proposals
     FOR SELECT TO agent_contributor USING (agent_id = auth.uid());
 GRANT SELECT ON public.agent_proposals TO agent_contributor;
@@ -97,7 +100,6 @@ GRANT SELECT ON commercial.stores, commercial.sellers, commercial.retail_offers 
 
 -- 4. Governance Functions (RPCs)
 
--- Helper to safely get the current role claim
 CREATE OR REPLACE FUNCTION public.get_jwt_role_claim() RETURNS text AS $$
 BEGIN
   RETURN coalesce(current_setting('request.jwt.claims', true)::jsonb->>'role', '');
@@ -107,7 +109,6 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- Submit Agent Proposal
 CREATE OR REPLACE FUNCTION public.submit_agent_proposal(
     p_type text,
     p_payload jsonb,
@@ -116,7 +117,7 @@ CREATE OR REPLACE FUNCTION public.submit_agent_proposal(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     new_id uuid;
@@ -135,22 +136,29 @@ BEGIN
         RAISE EXCEPTION 'Invalid proposal type';
     END IF;
 
+    IF p_confidence IS NULL OR p_confidence < 0 OR p_confidence > 1 THEN
+        RAISE EXCEPTION 'Invalid confidence';
+    END IF;
+
+    IF p_source IS NULL OR trim(p_source) = '' THEN
+        RAISE EXCEPTION 'Source URL required';
+    END IF;
+
     INSERT INTO public.agent_proposals (agent_id, proposal_type, status, payload, source_url, confidence)
-    VALUES (auth.uid(), p_type, 'pending_review', p_payload, p_source, p_confidence)
+    VALUES (auth.uid(), p_type, 'pending_review', p_payload, trim(p_source), p_confidence)
     RETURNING id INTO new_id;
 
     RETURN new_id;
 END;
 $$;
 
--- Approve Agent Proposal
 CREATE OR REPLACE FUNCTION public.approve_agent_proposal(
     p_proposal_id uuid,
     p_target_status text
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     curr_status text;
@@ -182,13 +190,12 @@ END;
 $$;
 
 
--- Promote Technology Proposal
 CREATE OR REPLACE FUNCTION public.promote_technology_proposal(
     p_proposal_id uuid
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     prop record;
@@ -199,6 +206,8 @@ DECLARE
     payload_name text;
     payload_slug text;
     payload_entity_type text;
+    ident_type text;
+    ident_val text;
 BEGIN
     caller_role := public.get_jwt_role_claim();
     IF caller_role != 'agent_reviewer' THEN
@@ -223,18 +232,25 @@ BEGIN
         RAISE EXCEPTION 'Invalid entity_type constraint';
     END IF;
 
-    -- Insert Canonical (let DB trigger unique constraint on slug if exists)
+    -- Insert Canonical - Set to unpublished explicitly to preserve human publication authority
     INSERT INTO public.technology_entities (entity_type, slug, name, is_published)
-    VALUES (payload_entity_type, payload_slug, payload_name, true)
+    VALUES (payload_entity_type, payload_slug, payload_name, false)
     RETURNING id INTO new_tech_id;
 
     -- Handle identifiers mapping if provided
     IF jsonb_typeof(prop.payload->'identifiers') = 'array' THEN
         FOR j_identifier IN SELECT * FROM jsonb_array_elements(prop.payload->'identifiers')
         LOOP
+            ident_type := trim(j_identifier->>'type');
+            ident_val := trim(j_identifier->>'value');
+
+            IF ident_type IS NULL OR ident_type = '' OR ident_val IS NULL OR ident_val = '' THEN
+                RAISE EXCEPTION 'Identifier type and value must be non-empty strings';
+            END IF;
+
             -- This relies on UNIQUE(type, value) throwing error inherently if duplicates exist
             INSERT INTO public.technology_identifiers (tech_entity_id, identifier_type, identifier_value)
-            VALUES (new_tech_id, j_identifier->>'type', j_identifier->>'value');
+            VALUES (new_tech_id, ident_type, ident_val);
         END LOOP;
     END IF;
 
@@ -243,7 +259,7 @@ BEGIN
     IF src_id IS NULL THEN
         INSERT INTO public.sources (slug, name, url)
         VALUES (
-            encode(digest(prop.source_url, 'sha256'), 'hex'),
+            encode(extensions.digest(prop.source_url, 'sha256'), 'hex'),
             coalesce(substring(prop.source_url from 'https?://([^/]+)'), 'Unknown Agent Source'),
             prop.source_url
         ) RETURNING id INTO src_id;
@@ -263,13 +279,12 @@ END;
 $$;
 
 
--- Promote Relationship Proposal
 CREATE OR REPLACE FUNCTION public.promote_relationship_proposal(
     p_proposal_id uuid
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     prop record;
@@ -299,6 +314,10 @@ BEGIN
          RAISE EXCEPTION 'Payload missing required fields (source_entity_id, target_entity_id, relationship_type)';
     END IF;
 
+    IF rel_type NOT IN ('runs_on', 'requires', 'compatible_with', 'incompatible_with', 'depends_on', 'integrates_with', 'alternative_to', 'replaces', 'uses_model', 'requires_hardware', 'powered_by', 'contains') THEN
+         RAISE EXCEPTION 'Invalid relationship type';
+    END IF;
+
     -- Validate Entity Exists
     IF NOT EXISTS (SELECT 1 FROM public.technology_entities WHERE id = src_tech_id) THEN
         RAISE EXCEPTION 'Source entity does not exist';
@@ -307,12 +326,12 @@ BEGIN
         RAISE EXCEPTION 'Target entity does not exist';
     END IF;
 
-    -- Source Resolution (Minimal, reuse logic)
+    -- Source Resolution
     SELECT id INTO src_id FROM public.sources WHERE url = prop.source_url LIMIT 1;
     IF src_id IS NULL THEN
         INSERT INTO public.sources (slug, name, url)
         VALUES (
-            encode(digest(prop.source_url, 'sha256'), 'hex'),
+            encode(extensions.digest(prop.source_url, 'sha256'), 'hex'),
             coalesce(substring(prop.source_url from 'https?://([^/]+)'), 'Unknown Agent Source'),
             prop.source_url
         ) RETURNING id INTO src_id;
@@ -323,7 +342,7 @@ BEGIN
     VALUES (src_tech_id, tgt_tech_id, rel_type, 'approved', prop.confidence)
     RETURNING id INTO new_rel_id;
 
-    -- Insert Evidence (Optional graph evidence link)
+    -- Insert Evidence
     INSERT INTO public.evidence (entity_type, entity_id, tech_entity_id, source_id, field_name, observed_value, confidence)
     VALUES ('tech_relationships', new_rel_id, src_tech_id, src_id, 'relationship', rel_type, prop.confidence);
 
@@ -337,13 +356,12 @@ END;
 $$;
 
 
--- Promote Retail Observation
 CREATE OR REPLACE FUNCTION public.promote_retail_observation(
     p_proposal_id uuid
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     caller_role text;
