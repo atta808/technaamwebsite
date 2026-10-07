@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Download, ShieldCheck, Smartphone } from "lucide-react";
 
 const APK_DOWNLOAD_URL =
-  "https://drive.google.com/uc?export=download&id=1lD-9yaXJFXs_40FY4GjrvEe-pUGettf-";
+  "https://drive.google.com/drive/folders/1sDOvsHbwKtDTLZnBo52IP4THFcRZ3PAe?usp=sharing";
 
 export default function ClerkDownload() {
   return (
