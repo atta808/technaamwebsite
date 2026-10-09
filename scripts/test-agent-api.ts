@@ -62,7 +62,7 @@ async function main() {
     assert.equal(response.status, 403);
     results.push("rejects non-contributor role");
 
-    response = await POST(request(validBody, `${token().slice(0, -1)}x`));
+    response = await POST(request(validBody, token({}, "wrong-signing-secret")));
     assert.equal(response.status, 401);
     results.push("rejects invalid JWT signature");
 
