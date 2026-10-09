@@ -122,7 +122,7 @@ export function validateProposalRequest(input: unknown):
         relationship_type: payload.relationship_type,
       },
       source_url: source.toString(),
-      confidence: input.confidence,
+      confidence: Math.round(input.confidence * 1000) / 1000,
     },
   };
 }
