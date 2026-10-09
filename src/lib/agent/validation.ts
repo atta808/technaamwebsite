@@ -94,7 +94,7 @@ export function validateProposalRequest(input: unknown):
           }),
         },
         source_url: source.toString(),
-        confidence: input.confidence,
+        confidence: Math.round(input.confidence * 1000) / 1000,
       },
     };
   }
