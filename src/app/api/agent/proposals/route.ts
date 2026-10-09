@@ -133,8 +133,7 @@ export async function POST(request: NextRequest) {
   const auth = verifyAgentToken(request.headers.get("authorization"));
   if (!auth.ok) return jsonError(auth.status, auth.error);
 
-  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  if (!rateLimit(`${auth.claims.sub}:${clientIp}`)) {
+  if (!rateLimit(auth.claims.sub)) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
