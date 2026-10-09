@@ -19,7 +19,8 @@
     "test:roast-parsing": "tsx scripts/test-roast-parsing.mjs",
     "test:phase6c1": "tsx scripts/test-phase6c1-foundation.mjs",
     "test:phase6c3": "tsx scripts/test-phase6c3-pricing.ts",
-    "test:phase7-governance": "tsx scripts/test-phase7-governance.mjs"
+    "test:phase7-governance": "tsx scripts/test-phase7-governance.mjs",
+    "test:agent-api": "tsx scripts/test-agent-api.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
