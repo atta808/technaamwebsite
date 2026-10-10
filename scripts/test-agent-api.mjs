@@ -5,7 +5,7 @@ const route = await readFile("src/app/api/agent/proposals/route.ts", "utf8");
 const migration = await readFile("supabase/migrations/20260826070000_phase7_agent_governance.sql", "utf8");
 
 const checks = [
-  ["requires bearer authentication", /match\\(\\/\\^Bearer/.test(auth)],
+  ["requires bearer authentication", auth.includes("authorization?.match(/^Bearer")],
   ["validates token through Supabase Auth getUser", /auth\.getUser\(match\[1\]\)/.test(auth)],
   ["uses no service-role key in agent auth", !/SUPABASE_SERVICE_ROLE_KEY/.test(auth)],
   ["rate limits requests", /MAX_REQUESTS = 20/.test(route) && /rateLimited\(clientKey\)/.test(route)],
