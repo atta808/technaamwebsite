@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const auth = await readFile("src/lib/agent/auth.ts", "utf8");
