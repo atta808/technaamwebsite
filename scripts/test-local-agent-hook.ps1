@@ -1,7 +1,7 @@
 # Phase 7B local Auth Hook integration test.
 # Run from the repository root in PowerShell:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-local-agent-hook.ps1
-# This test verifies loopback port bindings and only uses local Docker services.
+# This test verifies loopback port bindings and uses local Docker services only.
 $ErrorActionPreference = "Stop"
 
 $testEmail = $null
@@ -48,6 +48,7 @@ try {
             throw "Refusing to test: API port binding is not localhost-only."
         }
     }
+
     $dbPorts = @(& docker port $dbContainer "5432/tcp" 2>$null)
     if ($LASTEXITCODE -ne 0 -or $dbPorts.Count -eq 0) {
         throw "Could not verify the local database port binding."
@@ -63,7 +64,7 @@ try {
         throw "The local role-assignment table or hook function is missing. Do not run a remote migration."
     }
 
-    # Read CLI local status into memory only. Never print the values.
+    # Parse the CLI's local environment output into memory; never print secret values.
     $envLines = & supabase status -o env 2>$null
     $statusExitCode = $LASTEXITCODE
     if ($statusExitCode -ne 0) {
@@ -72,83 +73,7 @@ try {
 
     $values = @{}
     foreach ($line in $envLines) {
-        if ($line -match '^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)
-
-    $testEmail = "phase7b-$([Guid]::NewGuid().ToString('N'))@example.com"
-    $testPassword = ([Guid]::NewGuid().ToString('N') + "Aa1!")
-    $headers = @{ apikey = $apiKey }
-    $signupBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
-
-    $signup = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $signupBody
-
-    if ($signup.user -and $signup.user.id) {
-        $testUserId = [string]$signup.user.id
-    } elseif ($signup.id) {
-        $testUserId = [string]$signup.id
-    }
-    if ($testUserId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        throw "Local sign-up did not return a valid user ID. Email confirmation may be required."
-    }
-
-    $insertSql = "INSERT INTO public.agent_role_assignments (user_id, role, is_active, grant_reason) VALUES ('$testUserId', 'agent_contributor', true, 'Temporary local Phase 7B hook test');"
-    $null = Invoke-LocalPsql $insertSql
-
-    $loginBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
-    $login = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $loginBody
-
-    if (-not $login.access_token) {
-        throw "Local password sign-in returned no access token."
-    }
-
-    $segments = $login.access_token.Split('.')
-    if ($segments.Length -lt 2) {
-        throw "Local Auth returned a token that is not in JWT format."
-    }
-    $payload = $segments[1].Replace('-', '+').Replace('_', '/')
-    switch ($payload.Length % 4) {
-        2 { $payload += '==' }
-        3 { $payload += '=' }
-    }
-    $claimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
-    $claims = $claimsJson | ConvertFrom-Json
-
-    if ($claims.role -eq "agent_contributor") {
-        Write-Host "PASS: Local Supabase Auth issued the agent_contributor role."
-        $testPassed = $true
-    } else {
-        Write-Host "FAIL: Local token role was '$($claims.role)', expected 'agent_contributor'."
-    }
-}
-catch {
-    Write-Host "TEST ERROR: $($_.Exception.Message)"
-    Write-Host "No API key, password, or access token was printed."
-}
-finally {
-    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        try {
-            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: temporary local user and role assignment removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Run the targeted local cleanup check before proceeding."
-        }
-    } elseif ($testEmail) {
-        try {
-            $escapedEmail = $testEmail.Replace("'", "''")
-            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: any user for this exact generated test email removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
-        }
-    }
-}
-
-if ($testPassed) {
-    Write-Host "Local Phase 7B Auth Hook integration test passed."
-} else {
-    exit 1
-}) {
+        if ($line -match '^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)$') {
             $keyName = $matches[1]
             $rawValue = $matches[2].Trim()
             if ($rawValue.Length -ge 2 -and
@@ -227,7 +152,7 @@ finally {
             $null = Invoke-LocalPsql $cleanupSql
             Write-Host "Cleanup: temporary local user and role assignment removed."
         } catch {
-            Write-Warning "Cleanup could not be confirmed. Run the targeted local cleanup check before proceeding."
+            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
         }
     } elseif ($testEmail) {
         try {
