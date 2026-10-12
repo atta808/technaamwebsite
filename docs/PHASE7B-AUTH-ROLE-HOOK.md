@@ -11,7 +11,7 @@ The migration adds:
 
 The function is deliberately **not** `SECURITY DEFINER`. It preserves the claims supplied by Supabase Auth for users without an active allowlist row. For a user with an active row, it changes the JWT `role` claim to the explicitly assigned value: `agent_contributor` or `agent_reviewer`.
 
-No user is automatically assigned either role. A row must be deliberately created by a database administrator.
+A new assignment defaults to **inactive**. An administrator must explicitly activate it. A row must be deliberately created and activated by a database administrator; no Auth user automatically receives either role.
 
 ## Important current-state note
 
@@ -27,13 +27,13 @@ Do not perform these steps automatically as part of a deployment. Review each st
 2. **Apply the migration first in a non-production/test environment** and verify the table, RLS policy, grants, and function privileges. Keep the production hook disabled until the entire test sequence succeeds.
 3. **Resolve the Auth user count discrepancy.** Confirm the correct Supabase project/environment and confirm a real intended agent user exists in `auth.users`.
 4. **Create or invite the intended Auth user through an approved administrative process.** Do not enable unrestricted public signup just to provision an agent.
-5. **Assign a role explicitly using the SQL Editor as a trusted database administrator.** Replace the placeholder UUID with the verified Auth user UUID; never run this example unchanged:
+5. **Assign and activate a role explicitly using the SQL Editor as a trusted database administrator.** Replace the placeholder UUID with the verified Auth user UUID; never run this example unchanged:
 
    ```sql
    INSERT INTO public.agent_role_assignments
-       (user_id, role, grant_reason)
+       (user_id, role, is_active, grant_reason)
    VALUES
-       ('<verified-auth-user-uuid>', 'agent_contributor',
+       ('<verified-auth-user-uuid>', 'agent_contributor', true,
         'Approved Phase 7B pilot access');
    ```
 
@@ -41,9 +41,9 @@ Do not perform these steps automatically as part of a deployment. Review each st
 6. **Configure the hook in Authentication → Auth Hooks** only after the migration is applied and verified. Add a Custom Access Token Hook using the Postgres function `public.custom_access_token_hook`. Do not create a second hook with a conflicting purpose.
 7. **Test a controlled non-production account.** After signing in again/refreshing its token:
    - an active contributor allowlist row yields JWT `role = agent_contributor`;
-   - an active reviewer row yields `role = agent_reviewer`;
+   - an active reviewer row yields JWT `role = agent_reviewer`;
    - a user without an active assignment keeps the original Supabase `role` claim;
-   - disable an assignment, obtain a fresh token, and verify the original role returns;
+   - deactivate an assignment, obtain a fresh token, and verify the original role returns;
    - the contributor can submit only through `submit_agent_proposal`, and cannot directly write canonical entities;
    - the reviewer can only exercise reviewer-granted permissions/RPCs;
    - anon and ordinary authenticated users cannot execute the hook or write the allowlist.
