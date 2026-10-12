@@ -1,9 +1,12 @@
 # Phase 7B local Auth Hook integration test.
-# Run from the repository root:
+# Run from the repository root in PowerShell:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-local-agent-hook.ps1
-# This test uses only local Docker services and refuses non-loopback port bindings.
+# Uses local Docker services only. Secrets and JWTs are never printed.
 $ErrorActionPreference = "Stop"
 
+$dbContainer = "supabase_db_technaam-web"
+$apiContainer = "supabase_kong_technaam-web"
+$apiUrl = "http://127.0.0.1:54321"
 $testEmail = $null
 $testUserId = $null
 $ordinaryEmail = $null
@@ -11,16 +14,38 @@ $ordinaryUserId = $null
 $contributorPassed = $false
 $ordinaryPassed = $false
 $testPassed = $false
-$dbContainer = "supabase_db_technaam-web"
-$apiContainer = "supabase_kong_technaam-web"
-$apiUrl = "http://127.0.0.1:54321"
 
 function Invoke-LocalPsql([string]$Sql) {
     $output = & docker exec $dbContainer psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -t -A -c $Sql 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "Local PostgreSQL command failed. Output: $($output -join ' ')"
+        throw "Local PostgreSQL command failed: $($output -join ' ')"
     }
     return ($output -join "").Trim()
+}
+
+function Get-LocalJwtClaims([string]$Token) {
+    $segments = $Token.Split('.')
+    if ($segments.Length -lt 2) {
+        throw "Local Auth returned a token that is not in JWT format."
+    }
+    $payload = $segments[1].Replace('-', '+').Replace('_', '/')
+    switch ($payload.Length % 4) {
+        2 { $payload += '==' }
+        3 { $payload += '=' }
+    }
+    $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
+    return ($json | ConvertFrom-Json)
+}
+
+function Remove-LocalTestUser([string]$UserId, [string]$Email) {
+    if ($UserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
+        $sql = "DELETE FROM auth.users WHERE id = '$UserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$UserId';"
+        $null = Invoke-LocalPsql $sql
+    } elseif ($Email -and $Email -like 'phase7b-*@example.com') {
+        $safeEmail = $Email.Replace("'", "''")
+        $sql = "DELETE FROM auth.users WHERE email = '$safeEmail';"
+        $null = Invoke-LocalPsql $sql
+    }
 }
 
 try {
@@ -64,11 +89,11 @@ try {
 
     $objectCheck = Invoke-LocalPsql "SELECT CASE WHEN to_regclass('public.agent_role_assignments') IS NOT NULL AND to_regprocedure('public.custom_access_token_hook(jsonb)') IS NOT NULL THEN 'ok' ELSE 'missing' END;"
     if ($objectCheck -ne "ok") {
-        throw "The local role-assignment table or hook function is missing. Do not run a remote migration."
+        throw "Local role-assignment table or hook function is missing. Do not run a remote migration."
     }
 
-    # The CLI can report intentionally excluded services on stderr. Capture both
-    # streams and parse only environment assignment lines; never print key values.
+    # supabase status may write an excluded-services diagnostic to stderr.
+    # Temporarily permit that native stderr while capturing output; do not print it.
     $savedErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
@@ -92,23 +117,23 @@ try {
         }
     }
 
-    $statusApiUrl = $values["API_URL"]
-    if ($statusApiUrl -ne $apiUrl) {
+    if ($values["API_URL"] -ne $apiUrl) {
         throw "CLI status did not report the expected local API URL. Refusing to send requests."
     }
-
     $apiKey = $values["PUBLISHABLE_KEY"]
     if (-not $apiKey) { $apiKey = $values["ANON_KEY"] }
     if (-not $apiKey) {
         throw "CLI output did not include a local publishable/anon key. No key was printed."
     }
 
+    $headers = @{ apikey = $apiKey }
+
+    # Positive case: active contributor assignment must produce role=agent_contributor.
     $testEmail = "phase7b-$([Guid]::NewGuid().ToString('N'))@example.com"
     $testPassword = [Guid]::NewGuid().ToString('N') + "Aa1!"
-    $headers = @{ apikey = $apiKey }
     $signupBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
+    $signup = Invoke-RestMethod -Method Post -Uri "$apiUrl/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $signupBody
 
-    $signup = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $signupBody
     if ($signup.user -and $signup.user.id) {
         $testUserId = [string]$signup.user.id
     } elseif ($signup.id) {
@@ -122,99 +147,48 @@ try {
     $null = Invoke-LocalPsql $insertSql
 
     $loginBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
-    $login = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $loginBody
+    $login = Invoke-RestMethod -Method Post -Uri "$apiUrl/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $loginBody
     if (-not $login.access_token) {
-        throw "Local password sign-in returned no access token."
+        throw "Local contributor sign-in returned no access token."
     }
 
-    $segments = $login.access_token.Split('.')
-    if ($segments.Length -lt 2) {
-        throw "Local Auth returned a token that is not in JWT format."
-    }
-    $payload = $segments[1].Replace('-', '+').Replace('_', '/')
-    switch ($payload.Length % 4) {
-        2 { $payload += '==' }
-        3 { $payload += '=' }
-    }
-    $claimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
-    $claims = $claimsJson | ConvertFrom-Json
-
+    $claims = Get-LocalJwtClaims $login.access_token
     if ($claims.role -eq "agent_contributor") {
-        Write-Host "PASS: Local Supabase Auth issued the agent_contributor role for an active assignment."
+        Write-Host "PASS: Active contributor assignment produced role agent_contributor."
         $contributorPassed = $true
     } else {
-        Write-Host "FAIL: Contributor token role was '$($claims.role)', expected 'agent_contributor'."
+        Write-Host "FAIL: Contributor role was '$($claims.role)', expected agent_contributor."
     }
 
-    # Negative authorization case: an ordinary user has no agent role assignment.
+    # Negative case: ordinary user with no assignment must retain role=authenticated.
     $ordinaryEmail = "phase7b-ordinary-$([Guid]::NewGuid().ToString('N'))@example.com"
     $ordinaryPassword = [Guid]::NewGuid().ToString('N') + "Aa1!"
     $ordinarySignupBody = @{ email = $ordinaryEmail; password = $ordinaryPassword } | ConvertTo-Json -Compress
-    $ordinarySignup = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $ordinarySignupBody
+    $ordinarySignup = Invoke-RestMethod -Method Post -Uri "$apiUrl/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $ordinarySignupBody
 
     if ($ordinarySignup.user -and $ordinarySignup.user.id) {
         $ordinaryUserId = [string]$ordinarySignup.user.id
     } elseif ($ordinarySignup.id) {
         $ordinaryUserId = [string]$ordinarySignup.id
     }
-    if ($ordinaryUserId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
-}
-catch {
-    Write-Host "TEST ERROR: $($_.Exception.Message)"
-    Write-Host "No API key, password, or access token was printed."
-}
-finally {
-    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        try {
-            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: temporary local user and role assignment removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
-        }
-    } elseif ($testEmail) {
-        try {
-            $escapedEmail = $testEmail.Replace("'", "''")
-            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: any user for this exact generated test email removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
-        }
-    }
-
-    if ($ordinaryUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
-} else {
-    exit 1
-}
-) {
+    if ($ordinaryUserId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
         throw "Local ordinary-user sign-up did not return a valid user ID."
     }
 
     $ordinaryLoginBody = @{ email = $ordinaryEmail; password = $ordinaryPassword } | ConvertTo-Json -Compress
-    $ordinaryLogin = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $ordinaryLoginBody
+    $ordinaryLogin = Invoke-RestMethod -Method Post -Uri "$apiUrl/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $ordinaryLoginBody
     if (-not $ordinaryLogin.access_token) {
         throw "Local ordinary-user sign-in returned no access token."
     }
 
-    $ordinarySegments = $ordinaryLogin.access_token.Split('.')
-    if ($ordinarySegments.Length -lt 2) {
-        throw "Local ordinary-user token is not in JWT format."
-    }
-    $ordinaryPayload = $ordinarySegments[1].Replace('-', '+').Replace('_', '/')
-    switch ($ordinaryPayload.Length % 4) {
-        2 { $ordinaryPayload += '==' }
-        3 { $ordinaryPayload += '=' }
-    }
-    $ordinaryClaimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($ordinaryPayload))
-    $ordinaryClaims = $ordinaryClaimsJson | ConvertFrom-Json
-
+    $ordinaryClaims = Get-LocalJwtClaims $ordinaryLogin.access_token
     if ($ordinaryClaims.role -eq "authenticated") {
         Write-Host "PASS: Ordinary user without an assignment retained role authenticated."
         $ordinaryPassed = $true
     } else {
-        Write-Host "FAIL: Ordinary-user token role was '$($ordinaryClaims.role)', expected 'authenticated'."
+        Write-Host "FAIL: Ordinary-user role was '$($ordinaryClaims.role)', expected authenticated."
     }
+
     $testPassed = $contributorPassed -and $ordinaryPassed
 }
 catch {
@@ -222,107 +196,17 @@ catch {
     Write-Host "No API key, password, or access token was printed."
 }
 finally {
-    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        try {
-            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: temporary local user and role assignment removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
-        }
-    } elseif ($testEmail) {
-        try {
-            $escapedEmail = $testEmail.Replace("'", "''")
-            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: any user for this exact generated test email removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
-        }
-    }
-}
-
-if ($testPassed) {
-    Write-Host "Local Phase 7B Auth Hook integration test passed."
-} else {
-    exit 1
-}
-) {
-        try {
-            $ordinaryCleanupSql = "DELETE FROM auth.users WHERE id = '$ordinaryUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$ordinaryUserId';"
-            $null = Invoke-LocalPsql $ordinaryCleanupSql
-            Write-Host "Cleanup: temporary ordinary local Auth user removed."
-        } catch {
-            Write-Warning "Ordinary-user cleanup could not be confirmed. Check local auth.users before continuing."
-        }
-    } elseif ($ordinaryEmail) {
-        try {
-            $escapedOrdinaryEmail = $ordinaryEmail.Replace("'", "''")
-            $ordinaryCleanupSql = "DELETE FROM auth.users WHERE email = '$escapedOrdinaryEmail';"
-            $null = Invoke-LocalPsql $ordinaryCleanupSql
-            Write-Host "Cleanup: any user for the generated ordinary test email removed."
-        } catch {
-            Write-Warning "Ordinary-user cleanup could not be confirmed."
-        }
-    }
-}
-
-if ($testPassed) {
-    Write-Host "Local Phase 7B Auth Hook integration test passed."
-} else {
-    exit 1
-}
-) {
-        throw "Local ordinary-user sign-up did not return a valid user ID."
-    }
-
-    $ordinaryLoginBody = @{ email = $ordinaryEmail; password = $ordinaryPassword } | ConvertTo-Json -Compress
-    $ordinaryLogin = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $ordinaryLoginBody
-    if (-not $ordinaryLogin.access_token) {
-        throw "Local ordinary-user sign-in returned no access token."
-    }
-
-    $ordinarySegments = $ordinaryLogin.access_token.Split('.')
-    if ($ordinarySegments.Length -lt 2) {
-        throw "Local ordinary-user token is not in JWT format."
-    }
-    $ordinaryPayload = $ordinarySegments[1].Replace('-', '+').Replace('_', '/')
-    switch ($ordinaryPayload.Length % 4) {
-        2 { $ordinaryPayload += '==' }
-        3 { $ordinaryPayload += '=' }
-    }
-    $ordinaryClaimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($ordinaryPayload))
-    $ordinaryClaims = $ordinaryClaimsJson | ConvertFrom-Json
-
-    if ($ordinaryClaims.role -eq "authenticated") {
-        Write-Host "PASS: Ordinary user without an assignment retained role authenticated."
-        $ordinaryPassed = $true
-    } else {
-        Write-Host "FAIL: Ordinary-user token role was '$($ordinaryClaims.role)', expected 'authenticated'."
-    }
-    $testPassed = $contributorPassed -and $ordinaryPassed
-}
-catch {
-    Write-Host "TEST ERROR: $($_.Exception.Message)"
-    Write-Host "No API key, password, or access token was printed."
-}
-finally {
-    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        try {
-            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: temporary local user and role assignment removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
-        }
-    } elseif ($testEmail) {
-        try {
-            $escapedEmail = $testEmail.Replace("'", "''")
-            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: any user for this exact generated test email removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
+    foreach ($user in @(
+        [pscustomobject]@{ Id = $testUserId; Email = $testEmail },
+        [pscustomobject]@{ Id = $ordinaryUserId; Email = $ordinaryEmail }
+    )) {
+        if ($user.Id -or $user.Email) {
+            try {
+                Remove-LocalTestUser -UserId ([string]$user.Id) -Email ([string]$user.Email)
+                Write-Host "Cleanup: temporary local test user/assignment removed where present."
+            } catch {
+                Write-Warning "Cleanup could not be confirmed for a temporary local test record."
+            }
         }
     }
 }
