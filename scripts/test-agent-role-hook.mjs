@@ -18,15 +18,15 @@ const checks = [
     /CHECK \(role IN \('agent_contributor', 'agent_reviewer'\)\)/i.test(migration),
   ],
   [
-    "role assignments default to inactive only when explicitly changed (active default is documented)",
-    /is_active boolean NOT NULL DEFAULT true/i.test(migration),
+    "a new assignment is inactive until explicitly activated",
+    /is_active boolean NOT NULL DEFAULT false/i.test(migration),
   ],
   [
     "allowlist has row-level security enabled",
     /ALTER TABLE public\.agent_role_assignments ENABLE ROW LEVEL SECURITY/i.test(migration),
   ],
   [
-    "Auth hook role can only be read for active allowlisted users",
+    "hook only considers active allowlisted users",
     /WHERE assignment\.user_id = subject_id\s+AND assignment\.is_active = true/i.test(functionSql),
   ],
   [
@@ -42,12 +42,12 @@ const checks = [
     !/SECURITY DEFINER/i.test(functionSql),
   ],
   [
-    "supabase_auth_admin receives only the needed assignment-table SELECT grant",
+    "supabase_auth_admin receives assignment-table SELECT through a specific RLS policy",
     /GRANT SELECT ON TABLE public\.agent_role_assignments TO supabase_auth_admin/i.test(migration) &&
       /CREATE POLICY "supabase_auth_admin can read agent role assignments"[\s\S]*?FOR SELECT\s+TO supabase_auth_admin\s+USING \(true\)/i.test(migration),
   ],
   [
-    "only supabase_auth_admin receives hook execution permission",
+    "client roles are revoked and hook execution is explicitly granted to supabase_auth_admin",
     /GRANT EXECUTE ON FUNCTION public\.custom_access_token_hook\(jsonb\)\s+TO supabase_auth_admin/i.test(migration) &&
       /REVOKE ALL PRIVILEGES ON FUNCTION public\.custom_access_token_hook\(jsonb\)\s+FROM PUBLIC, anon, authenticated, service_role,\s+agent_contributor, agent_reviewer/i.test(migration),
   ],
