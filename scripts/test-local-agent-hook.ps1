@@ -6,6 +6,10 @@ $ErrorActionPreference = "Stop"
 
 $testEmail = $null
 $testUserId = $null
+$ordinaryEmail = $null
+$ordinaryUserId = $null
+$contributorPassed = $false
+$ordinaryPassed = $false
 $testPassed = $false
 $dbContainer = "supabase_db_technaam-web"
 $apiContainer = "supabase_kong_technaam-web"
@@ -136,11 +140,167 @@ try {
     $claims = $claimsJson | ConvertFrom-Json
 
     if ($claims.role -eq "agent_contributor") {
-        Write-Host "PASS: Local Supabase Auth issued the agent_contributor role."
-        $testPassed = $true
+        Write-Host "PASS: Local Supabase Auth issued the agent_contributor role for an active assignment."
+        $contributorPassed = $true
     } else {
-        Write-Host "FAIL: Local token role was '$($claims.role)', expected 'agent_contributor'."
+        Write-Host "FAIL: Contributor token role was '$($claims.role)', expected 'agent_contributor'."
     }
+
+    # Negative authorization case: an ordinary user has no agent role assignment.
+    $ordinaryEmail = "phase7b-ordinary-$([Guid]::NewGuid().ToString('N'))@example.com"
+    $ordinaryPassword = [Guid]::NewGuid().ToString('N') + "Aa1!"
+    $ordinarySignupBody = @{ email = $ordinaryEmail; password = $ordinaryPassword } | ConvertTo-Json -Compress
+    $ordinarySignup = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $ordinarySignupBody
+
+    if ($ordinarySignup.user -and $ordinarySignup.user.id) {
+        $ordinaryUserId = [string]$ordinarySignup.user.id
+    } elseif ($ordinarySignup.id) {
+        $ordinaryUserId = [string]$ordinarySignup.id
+    }
+    if ($ordinaryUserId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+}
+catch {
+    Write-Host "TEST ERROR: $($_.Exception.Message)"
+    Write-Host "No API key, password, or access token was printed."
+}
+finally {
+    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
+        try {
+            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
+            $null = Invoke-LocalPsql $cleanupSql
+            Write-Host "Cleanup: temporary local user and role assignment removed."
+        } catch {
+            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
+        }
+    } elseif ($testEmail) {
+        try {
+            $escapedEmail = $testEmail.Replace("'", "''")
+            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
+            $null = Invoke-LocalPsql $cleanupSql
+            Write-Host "Cleanup: any user for this exact generated test email removed."
+        } catch {
+            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
+        }
+    }
+
+    if ($ordinaryUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+} else {
+    exit 1
+}
+) {
+        throw "Local ordinary-user sign-up did not return a valid user ID."
+    }
+
+    $ordinaryLoginBody = @{ email = $ordinaryEmail; password = $ordinaryPassword } | ConvertTo-Json -Compress
+    $ordinaryLogin = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $ordinaryLoginBody
+    if (-not $ordinaryLogin.access_token) {
+        throw "Local ordinary-user sign-in returned no access token."
+    }
+
+    $ordinarySegments = $ordinaryLogin.access_token.Split('.')
+    if ($ordinarySegments.Length -lt 2) {
+        throw "Local ordinary-user token is not in JWT format."
+    }
+    $ordinaryPayload = $ordinarySegments[1].Replace('-', '+').Replace('_', '/')
+    switch ($ordinaryPayload.Length % 4) {
+        2 { $ordinaryPayload += '==' }
+        3 { $ordinaryPayload += '=' }
+    }
+    $ordinaryClaimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($ordinaryPayload))
+    $ordinaryClaims = $ordinaryClaimsJson | ConvertFrom-Json
+
+    if ($ordinaryClaims.role -eq "authenticated") {
+        Write-Host "PASS: Ordinary user without an assignment retained role authenticated."
+        $ordinaryPassed = $true
+    } else {
+        Write-Host "FAIL: Ordinary-user token role was '$($ordinaryClaims.role)', expected 'authenticated'."
+    }
+    $testPassed = $contributorPassed -and $ordinaryPassed
+}
+catch {
+    Write-Host "TEST ERROR: $($_.Exception.Message)"
+    Write-Host "No API key, password, or access token was printed."
+}
+finally {
+    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
+        try {
+            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
+            $null = Invoke-LocalPsql $cleanupSql
+            Write-Host "Cleanup: temporary local user and role assignment removed."
+        } catch {
+            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
+        }
+    } elseif ($testEmail) {
+        try {
+            $escapedEmail = $testEmail.Replace("'", "''")
+            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
+            $null = Invoke-LocalPsql $cleanupSql
+            Write-Host "Cleanup: any user for this exact generated test email removed."
+        } catch {
+            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
+        }
+    }
+}
+
+if ($testPassed) {
+    Write-Host "Local Phase 7B Auth Hook integration test passed."
+} else {
+    exit 1
+}
+) {
+        try {
+            $ordinaryCleanupSql = "DELETE FROM auth.users WHERE id = '$ordinaryUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$ordinaryUserId';"
+            $null = Invoke-LocalPsql $ordinaryCleanupSql
+            Write-Host "Cleanup: temporary ordinary local Auth user removed."
+        } catch {
+            Write-Warning "Ordinary-user cleanup could not be confirmed. Check local auth.users before continuing."
+        }
+    } elseif ($ordinaryEmail) {
+        try {
+            $escapedOrdinaryEmail = $ordinaryEmail.Replace("'", "''")
+            $ordinaryCleanupSql = "DELETE FROM auth.users WHERE email = '$escapedOrdinaryEmail';"
+            $null = Invoke-LocalPsql $ordinaryCleanupSql
+            Write-Host "Cleanup: any user for the generated ordinary test email removed."
+        } catch {
+            Write-Warning "Ordinary-user cleanup could not be confirmed."
+        }
+    }
+}
+
+if ($testPassed) {
+    Write-Host "Local Phase 7B Auth Hook integration test passed."
+} else {
+    exit 1
+}
+) {
+        throw "Local ordinary-user sign-up did not return a valid user ID."
+    }
+
+    $ordinaryLoginBody = @{ email = $ordinaryEmail; password = $ordinaryPassword } | ConvertTo-Json -Compress
+    $ordinaryLogin = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $ordinaryLoginBody
+    if (-not $ordinaryLogin.access_token) {
+        throw "Local ordinary-user sign-in returned no access token."
+    }
+
+    $ordinarySegments = $ordinaryLogin.access_token.Split('.')
+    if ($ordinarySegments.Length -lt 2) {
+        throw "Local ordinary-user token is not in JWT format."
+    }
+    $ordinaryPayload = $ordinarySegments[1].Replace('-', '+').Replace('_', '/')
+    switch ($ordinaryPayload.Length % 4) {
+        2 { $ordinaryPayload += '==' }
+        3 { $ordinaryPayload += '=' }
+    }
+    $ordinaryClaimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($ordinaryPayload))
+    $ordinaryClaims = $ordinaryClaimsJson | ConvertFrom-Json
+
+    if ($ordinaryClaims.role -eq "authenticated") {
+        Write-Host "PASS: Ordinary user without an assignment retained role authenticated."
+        $ordinaryPassed = $true
+    } else {
+        Write-Host "FAIL: Ordinary-user token role was '$($ordinaryClaims.role)', expected 'authenticated'."
+    }
+    $testPassed = $contributorPassed -and $ordinaryPassed
 }
 catch {
     Write-Host "TEST ERROR: $($_.Exception.Message)"
