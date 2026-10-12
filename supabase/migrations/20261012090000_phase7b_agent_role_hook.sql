@@ -6,12 +6,12 @@ CREATE TABLE public.agent_role_assignments (
     user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
     role text NOT NULL
         CHECK (role IN ('agent_contributor', 'agent_reviewer')),
-    is_active boolean NOT NULL DEFAULT true,
+    -- Fail closed: a new row grants no role until an administrator activates it.
+    is_active boolean NOT NULL DEFAULT false,
     grant_reason text NOT NULL
         CHECK (length(btrim(grant_reason)) > 0),
     granted_by uuid NULL REFERENCES auth.users (id) ON DELETE SET NULL,
-    granted_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
+    granted_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.agent_role_assignments ENABLE ROW LEVEL SECURITY;
@@ -62,7 +62,7 @@ BEGIN
      WHERE assignment.user_id = subject_id
        AND assignment.is_active = true;
 
-    -- Only explicitly allowlisted users have their database role changed.
+    -- Only explicitly allowlisted, active users have their database role changed.
     -- Everyone else keeps the role supplied by Supabase Auth (normally
     -- "authenticated"), so this hook does not grant agent privileges broadly.
     IF assigned_role IS NOT NULL THEN
@@ -73,8 +73,8 @@ BEGIN
 END;
 $function$;
 
--- Use the invoker's permissions rather than SECURITY DEFINER. Supabase Auth
--- has only schema usage, EXECUTE on this hook, and SELECT via the RLS policy.
+-- Use invoker permissions rather than SECURITY DEFINER. Supabase Auth has only
+-- schema usage, EXECUTE on this hook, and SELECT via the RLS policy.
 GRANT USAGE ON SCHEMA public TO supabase_auth_admin;
 GRANT EXECUTE ON FUNCTION public.custom_access_token_hook(jsonb)
     TO supabase_auth_admin;
