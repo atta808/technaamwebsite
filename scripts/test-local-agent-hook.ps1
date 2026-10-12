@@ -1,13 +1,15 @@
 # Phase 7B local Auth Hook integration test.
 # Run from the repository root in PowerShell:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-local-agent-hook.ps1
-# This test refuses non-loopback API URLs and only talks to the local Docker DB.
+# This test verifies loopback port bindings and only uses local Docker services.
 $ErrorActionPreference = "Stop"
 
 $testEmail = $null
 $testUserId = $null
 $testPassed = $false
 $dbContainer = "supabase_db_technaam-web"
+$apiContainer = "supabase_kong_technaam-web"
+$apiUrl = "http://127.0.0.1:54321"
 
 function Invoke-LocalPsql([string]$Sql) {
     $output = & docker exec $dbContainer psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -t -A -c $Sql 2>&1
@@ -27,45 +29,54 @@ try {
         throw "The local Custom Access Token Hook is not enabled in supabase/config.toml."
     }
 
-    $containerName = (& docker ps --filter "name=^/$dbContainer$" --format "{{.Names}}" 2>$null | Select-Object -First 1)
-    if ($LASTEXITCODE -ne 0 -or $containerName -ne $dbContainer) {
+    $running = @(& docker ps --filter "name=^/$dbContainer$" --format "{{.Names}}" 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $running -notcontains $dbContainer) {
         throw "Expected local database container '$dbContainer' is not running."
     }
-
-    $envLines = & supabase status -o env 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not read local Supabase status. Ensure the local stack is running."
+    $runningApi = @(& docker ps --filter "name=^/$apiContainer$" --format "{{.Names}}" 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $runningApi -notcontains $apiContainer) {
+        throw "Expected local API gateway '$apiContainer' is not running."
     }
 
-    $values = @{}
-    foreach ($line in $envLines) {
-        if ($line -match '^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)$') {
-            $keyName = $matches[1]
-            $rawValue = $matches[2].Trim()
-            if ($rawValue.Length -ge 2 -and
-                (($rawValue.StartsWith('"') -and $rawValue.EndsWith('"')) -or
-                 ($rawValue.StartsWith("'") -and $rawValue.EndsWith("'")))) {
-                $rawValue = $rawValue.Substring(1, $rawValue.Length - 2)
-            }
-            $values[$keyName] = $rawValue
+    # Fail closed if Docker published local dev ports on a non-loopback address.
+    $apiPorts = @(& docker port $apiContainer "8000/tcp" 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $apiPorts.Count -eq 0) {
+        throw "Could not verify the local API port binding."
+    }
+    foreach ($binding in $apiPorts) {
+        if ($binding -notmatch '^(127\.0\.0\.1|\[::1\]):54321$') {
+            throw "Refusing to test: API port binding is not localhost-only."
         }
     }
-
-    $apiUrl = $values["API_URL"]
-    $apiKey = $values["PUBLISHABLE_KEY"]
-    if (-not $apiKey) { $apiKey = $values["ANON_KEY"] }
-    if (-not $apiUrl -or -not $apiKey) {
-        throw "Local API URL or publishable/anon key is missing from CLI status. No values were printed."
+    $dbPorts = @(& docker port $dbContainer "5432/tcp" 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $dbPorts.Count -eq 0) {
+        throw "Could not verify the local database port binding."
     }
-
-    $apiUri = [System.Uri]$apiUrl
-    if (-not $apiUri.IsLoopback -or $apiUri.Port -ne 54321 -or $apiUri.Scheme -ne "http") {
-        throw "Refusing to test: API URL is not the expected local loopback endpoint on port 54321."
+    foreach ($binding in $dbPorts) {
+        if ($binding -notmatch '^(127\.0\.0\.1|\[::1\]):54322$') {
+            throw "Refusing to test: database port binding is not localhost-only."
+        }
     }
 
     $objectCheck = Invoke-LocalPsql "SELECT CASE WHEN to_regclass('public.agent_role_assignments') IS NOT NULL AND to_regprocedure('public.custom_access_token_hook(jsonb)') IS NOT NULL THEN 'ok' ELSE 'missing' END;"
     if ($objectCheck -ne "ok") {
         throw "The local role-assignment table or hook function is missing. Do not run a remote migration."
+    }
+
+    # Read the key from the local API gateway container's environment, without printing it.
+    $containerEnv = @(& docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' $apiContainer 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not inspect local API gateway configuration."
+    }
+    $apiKey = $null
+    foreach ($line in $containerEnv) {
+        if ($line -match '^(SUPABASE_ANON_KEY|ANON_KEY|SUPABASE_PUBLISHABLE_KEY|PUBLISHABLE_KEY)=(.+)$') {
+            $apiKey = $matches[2]
+            break
+        }
+    }
+    if (-not $apiKey) {
+        throw "No local publishable/anon key was found in the local API gateway environment. No key was printed."
     }
 
     $testEmail = "phase7b-$([Guid]::NewGuid().ToString('N'))@example.com"
