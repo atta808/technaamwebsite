@@ -1,7 +1,7 @@
 # Phase 7B local Auth Hook integration test.
-# Run from the repository root in PowerShell:
+# Run from the repository root:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-local-agent-hook.ps1
-# This test verifies loopback port bindings and uses local Docker services only.
+# This test uses only local Docker services and refuses non-loopback port bindings.
 $ErrorActionPreference = "Stop"
 
 $testEmail = $null
@@ -29,8 +29,8 @@ try {
         throw "The local Custom Access Token Hook is not enabled in supabase/config.toml."
     }
 
-    $running = @(& docker ps --filter "name=^/$dbContainer$" --format "{{.Names}}" 2>$null)
-    if ($LASTEXITCODE -ne 0 -or $running -notcontains $dbContainer) {
+    $runningDb = @(& docker ps --filter "name=^/$dbContainer$" --format "{{.Names}}" 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $runningDb -notcontains $dbContainer) {
         throw "Expected local database container '$dbContainer' is not running."
     }
     $runningApi = @(& docker ps --filter "name=^/$apiContainer$" --format "{{.Names}}" 2>$null)
@@ -38,13 +38,12 @@ try {
         throw "Expected local API gateway '$apiContainer' is not running."
     }
 
-    # Fail closed if Docker published local dev ports on a non-loopback address.
     $apiPorts = @(& docker port $apiContainer "8000/tcp" 2>$null)
     if ($LASTEXITCODE -ne 0 -or $apiPorts.Count -eq 0) {
         throw "Could not verify the local API port binding."
     }
     foreach ($binding in $apiPorts) {
-        if ($binding -notmatch '^(127\.0\.0\.1|\[::1\]):54321$') {
+        if ([string]$binding -notmatch '^(127\.0\.0\.1|\[::1\]):54321$') {
             throw "Refusing to test: API port binding is not localhost-only."
         }
     }
@@ -54,7 +53,7 @@ try {
         throw "Could not verify the local database port binding."
     }
     foreach ($binding in $dbPorts) {
-        if ($binding -notmatch '^(127\.0\.0\.1|\[::1\]):54322$') {
+        if ([string]$binding -notmatch '^(127\.0\.0\.1|\[::1\]):54322$') {
             throw "Refusing to test: database port binding is not localhost-only."
         }
     }
@@ -64,9 +63,8 @@ try {
         throw "The local role-assignment table or hook function is missing. Do not run a remote migration."
     }
 
-    # The CLI may emit "Stopped services" diagnostics for intentionally excluded
-    # services. Capture combined output; parse only environment assignment lines,
-    # and proceed only if the expected loopback URL and local key are present.
+    # The CLI can report intentionally excluded services on stderr. Capture both
+    # streams and parse only environment assignment lines; never print key values.
     $savedErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
@@ -78,95 +76,7 @@ try {
     $values = @{}
     foreach ($item in $statusOutput) {
         $line = [string]$item
-        if ($line -match '^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)
-
-    $statusApiUrl = $values["API_URL"]
-    if ($statusApiUrl -ne $apiUrl) {
-        throw "CLI status did not report the expected local API URL. Refusing to send requests."
-    }
-
-    $apiKey = $values["PUBLISHABLE_KEY"]
-    if (-not $apiKey) { $apiKey = $values["ANON_KEY"] }
-    if (-not $apiKey) {
-        throw "CLI status did not provide a local publishable/anon key. No key was printed."
-    }
-
-    $testEmail = "phase7b-$([Guid]::NewGuid().ToString('N'))@example.com"
-    $testPassword = ([Guid]::NewGuid().ToString('N') + "Aa1!")
-    $headers = @{ apikey = $apiKey }
-    $signupBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
-
-    $signup = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $signupBody
-
-    if ($signup.user -and $signup.user.id) {
-        $testUserId = [string]$signup.user.id
-    } elseif ($signup.id) {
-        $testUserId = [string]$signup.id
-    }
-    if ($testUserId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        throw "Local sign-up did not return a valid user ID. Email confirmation may be required."
-    }
-
-    $insertSql = "INSERT INTO public.agent_role_assignments (user_id, role, is_active, grant_reason) VALUES ('$testUserId', 'agent_contributor', true, 'Temporary local Phase 7B hook test');"
-    $null = Invoke-LocalPsql $insertSql
-
-    $loginBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
-    $login = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $loginBody
-
-    if (-not $login.access_token) {
-        throw "Local password sign-in returned no access token."
-    }
-
-    $segments = $login.access_token.Split('.')
-    if ($segments.Length -lt 2) {
-        throw "Local Auth returned a token that is not in JWT format."
-    }
-    $payload = $segments[1].Replace('-', '+').Replace('_', '/')
-    switch ($payload.Length % 4) {
-        2 { $payload += '==' }
-        3 { $payload += '=' }
-    }
-    $claimsJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
-    $claims = $claimsJson | ConvertFrom-Json
-
-    if ($claims.role -eq "agent_contributor") {
-        Write-Host "PASS: Local Supabase Auth issued the agent_contributor role."
-        $testPassed = $true
-    } else {
-        Write-Host "FAIL: Local token role was '$($claims.role)', expected 'agent_contributor'."
-    }
-}
-catch {
-    Write-Host "TEST ERROR: $($_.Exception.Message)"
-    Write-Host "No API key, password, or access token was printed."
-}
-finally {
-    if ($testUserId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        try {
-            $cleanupSql = "DELETE FROM auth.users WHERE id = '$testUserId'; DELETE FROM public.agent_role_assignments WHERE user_id = '$testUserId';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: temporary local user and role assignment removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check the local test assignment before continuing."
-        }
-    } elseif ($testEmail) {
-        try {
-            $escapedEmail = $testEmail.Replace("'", "''")
-            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
-            $null = Invoke-LocalPsql $cleanupSql
-            Write-Host "Cleanup: any user for this exact generated test email removed."
-        } catch {
-            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
-        }
-    }
-}
-
-if ($testPassed) {
-    Write-Host "Local Phase 7B Auth Hook integration test passed."
-} else {
-    exit 1
-}
-) {
+        if ($line -match '^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)$') {
             $keyName = $matches[1]
             $rawValue = $matches[2].Trim()
             if ($rawValue.Length -ge 2 -and
@@ -186,16 +96,15 @@ if ($testPassed) {
     $apiKey = $values["PUBLISHABLE_KEY"]
     if (-not $apiKey) { $apiKey = $values["ANON_KEY"] }
     if (-not $apiKey) {
-        throw "CLI status did not provide a local publishable/anon key. No key was printed."
+        throw "CLI output did not include a local publishable/anon key. No key was printed."
     }
 
     $testEmail = "phase7b-$([Guid]::NewGuid().ToString('N'))@example.com"
-    $testPassword = ([Guid]::NewGuid().ToString('N') + "Aa1!")
+    $testPassword = [Guid]::NewGuid().ToString('N') + "Aa1!"
     $headers = @{ apikey = $apiKey }
     $signupBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
 
     $signup = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/signup" -Headers $headers -ContentType "application/json" -Body $signupBody
-
     if ($signup.user -and $signup.user.id) {
         $testUserId = [string]$signup.user.id
     } elseif ($signup.id) {
@@ -210,7 +119,6 @@ if ($testPassed) {
 
     $loginBody = @{ email = $testEmail; password = $testPassword } | ConvertTo-Json -Compress
     $login = Invoke-RestMethod -Method Post -Uri "$($apiUrl.TrimEnd('/'))/auth/v1/token?grant_type=password" -Headers $headers -ContentType "application/json" -Body $loginBody
-
     if (-not $login.access_token) {
         throw "Local password sign-in returned no access token."
     }
