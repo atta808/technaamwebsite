@@ -127,12 +127,19 @@ finally {
             Write-Warning "Cleanup could not be confirmed. Run the targeted local cleanup check before proceeding."
         }
     } elseif ($testEmail) {
-        Write-Warning "A test email was generated but no user ID was obtained; check local auth.users for the random phase7b test email before continuing."
+        try {
+            $escapedEmail = $testEmail.Replace("'", "''")
+            $cleanupSql = "DELETE FROM auth.users WHERE email = '$escapedEmail' AND email LIKE 'phase7b-%@example.com';"
+            $null = Invoke-LocalPsql $cleanupSql
+            Write-Host "Cleanup: any user for this exact generated test email removed."
+        } catch {
+            Write-Warning "Cleanup could not be confirmed. Check local auth.users for the generated phase7b test email."
+        }
     }
 }
 
 if ($testPassed) {
     Write-Host "Local Phase 7B Auth Hook integration test passed."
 } else {
-    $host.SetShouldExit(1)
+    exit 1
 }
