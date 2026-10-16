@@ -2,7 +2,7 @@
 
 **Repository:** `atta808/technaamwebsite`  
 **Working branch:** `technaam-phase7b-repair`  
-**Status:** Local static checks and production build pass; live edge-case verification and release review remain  
+**Status:** Core live API denial/validation checks pass locally; additional edge cases and release review remain  
 **Last updated:** 2026-10-16  
 **Latest pushed branch head observed:** `8718b93`  
 **Local API validation checkpoint:** `506e18b` — `fix: harden Phase 7B agent proposal validation`
@@ -73,16 +73,32 @@ The confidence-bound contract test was corrected to independently check `Number.
 
 The local checkpoint commit is `506e18b` (`fix: harden Phase 7B agent proposal validation`). The repair branch was then synchronized with the remote documentation commits and pushed; the push output showed remote branch head `8718b93`.
 
+### Latest authenticated live API checks — 2026-10-16
+
+The following checks were run against the local Next.js API at `http://127.0.0.1:3000` using local Supabase at `http://127.0.0.1:54321`. A temporary local contributor account was created for authenticated tests, assigned `agent_contributor`, and then cleaned up. The cleanup query returned no matching `phase7b-live-*@example.com` account. No hosted/production system was used.
+
+| Check | Observed result | Notes |
+|---|---|---|
+| `GET /api/agent/proposals` | PASS — HTTP 405 | Unsupported method rejected as intended. |
+| POST without Bearer token | PASS — HTTP 401 | Response: `Bearer token required.` |
+| POST with invalid Bearer token | PASS — HTTP 401 | Response: `Invalid or expired bearer token.` |
+| Authenticated POST with malformed JSON | PASS — HTTP 400 | Response: `Request body must be valid JSON.` Confirms parsing error is handled after authentication. |
+| Authenticated `suggest_retail_observation` request | PASS — HTTP 403 | Response: `Retail observations are disabled for this pilot.` Route rejected the request before database submission. No proposal was intentionally submitted by this test. |
+| Temporary local test user cleanup | PASS — no matching account found | The final query for `phase7b-live-*@example.com` returned no rows. |
+
+These tests establish only the specific observed responses. They do not verify expired-but-once-valid tokens, invalid HTTPS URLs, confidence boundaries, missing/invalid fields, unsupported types, rate limiting, or absence of every possible database side effect. The ordinary-user HTTP 403 result was demonstrated in an earlier local test session, not rerun in this latest session.
+
 ## 4. Remaining Phase 7B work — in order
 
 ### P0 — Finish live API verification
 
-- [ ] Live-test `suggest_retail_observation`; confirm HTTP 403 and confirm no proposal was inserted.
-- [ ] Test malformed JSON, missing fields, invalid HTTPS source URL, invalid confidence, and unsupported proposal types through the running API.
-- [ ] Test missing, malformed, and expired Bearer tokens; expected result is HTTP 401.
-- [ ] Re-run contributor submission and ordinary-user rejection tests after any code changes.
-- [ ] Verify that a duplicate request returns the expected response against the local database.
-- [ ] Record actual responses and database state; do not infer live behavior from static contract tests.
+- [x] Live-test `suggest_retail_observation`; observed HTTP 403. Route rejects before database submission; no proposal was intentionally submitted by this test.
+- [x] Test malformed JSON through the running API with valid contributor authentication; observed HTTP 400.
+- [x] Test missing and invalid Bearer tokens; observed HTTP 401 for both. An expired-but-once-valid token has not been tested.
+- [ ] Test missing fields, invalid HTTPS source URL, invalid confidence boundaries, and unsupported proposal types through the running API.
+- [ ] Re-run contributor submission and ordinary-user rejection tests in the current verification session after any code changes.
+- [ ] Verify duplicate handling again against the local database if the route changes.
+- [x] Record the actual HTTP responses above; keep static checks distinct from live API evidence.
 - [ ] Review API error logging and ensure responses do not expose database internals or credentials.
 
 ### P1 — Security and implementation review
@@ -137,4 +153,4 @@ The sequence below is a planning proposal. Each item should be scoped and review
 
 ## 6. Current conclusion
 
-The local contributor proposal path, local persistence, duplicate response, and ordinary-user denial have been demonstrated. The static API contract suite (13/13), TypeScript check, production build, and whitespace check passed locally on 2026-10-16. Retail rejection has been inspected in source but not yet exercised live, and the full malformed-input/token edge-case suite remains pending. The repair branch is pushed and synchronized with its remote; `supabase/config.toml` remains local and untracked. No merge to `main`, hosted Supabase change, or deployment was performed. **Phase 7B is not yet declared complete or production-ready.**
+The local contributor proposal path, local persistence, duplicate response, and ordinary-user denial were demonstrated in earlier local tests. In the latest local API session on 2026-10-16, GET returned HTTP 405; missing and invalid bearer tokens returned HTTP 401; malformed JSON with valid contributor authentication returned HTTP 400; and a retail observation returned HTTP 403. The temporary local test account was checked for cleanup and no matching account remained. The static API contract suite (13/13), TypeScript check, production build, and whitespace check passed locally on 2026-10-16. Remaining live checks include invalid HTTPS URLs, confidence boundaries, missing/invalid fields, unsupported types, rate limiting, and a repeat ordinary-user test. The repair branch is pushed and synchronized with its remote; `supabase/config.toml` remains local and untracked. No merge to `main`, hosted Supabase change, or deployment was performed. **Phase 7B is not yet declared complete or production-ready.**
