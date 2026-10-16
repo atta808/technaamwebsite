@@ -31,6 +31,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The easiest way to deploy your app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check out [the Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## TechNaam Phase 7B status
+
+The current Phase 7B repair progress, observed local test results, remaining verification checklist, and proposed future phases are documented in [`docs/PHASE7B_STATUS_AND_ROADMAP.md`](docs/PHASE7B_STATUS_AND_ROADMAP.md). The repair branch is not yet cleared for merge or production deployment.
