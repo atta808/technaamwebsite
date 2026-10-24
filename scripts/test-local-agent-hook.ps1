@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 $dbContainer = "supabase_db_technaam-web"
 $apiContainer = "supabase_kong_technaam-web"
-$apiUrl = "http://127.0.0.1:54321"
+$apiUrl = "http://127.0.0.1:55433"
 $testEmail = $null
 $testUserId = $null
 $ordinaryEmail = $null
@@ -72,7 +72,7 @@ try {
         throw "Could not verify the local API port binding."
     }
     foreach ($binding in $apiPorts) {
-        if ([string]$binding -notmatch '^(127\.0\.0\.1|\[::1\]):54321$') {
+        if ([string]$binding -notmatch '^(127\.0\.0\.1|\[::1\]):55433$') {
             throw "Refusing to test: API port binding is not localhost-only."
         }
     }
@@ -82,7 +82,7 @@ try {
         throw "Could not verify the local database port binding."
     }
     foreach ($binding in $dbPorts) {
-        if ([string]$binding -notmatch '^(127\.0\.0\.1|\[::1\]):54322$') {
+        if ([string]$binding -notmatch '^(127\.0\.0\.1|\[::1\]):55434$') {
             throw "Refusing to test: database port binding is not localhost-only."
         }
     }
