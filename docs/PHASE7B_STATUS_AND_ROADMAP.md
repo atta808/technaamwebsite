@@ -2,9 +2,9 @@
 
 **Repository:** `atta808/technaamwebsite`  
 **Working branch:** `technaam-phase7b-repair`  
-**Status:** Core live API denial/validation checks pass locally; additional edge cases and release review remain  
-**Last updated:** 2026-10-16  
-**Latest pushed branch head observed:** `8718b93`  
+**Status:** Local stack recovered and core checks pass; live proposal API edge cases and release review remain  
+**Last updated:** 2026-10-24  
+**Latest implementation commit:** `dc87868` — local Supabase port remap and integration-test update  
 **Local API validation checkpoint:** `506e18b` — `fix: harden Phase 7B agent proposal validation`
 
 > This document distinguishes observed local results from pending work. Passing local checks does not certify production readiness.
@@ -88,6 +88,32 @@ The following checks were run against the local Next.js API at `http://127.0.0.1
 
 These tests establish only the specific observed responses. They do not verify expired-but-once-valid tokens, invalid HTTPS URLs, confidence boundaries, missing/invalid fields, unsupported types, rate limiting, or absence of every possible database side effect. The ordinary-user HTTP 403 result was demonstrated in an earlier local test session, not rerun in this latest session.
 
+### Latest local recovery and verification — 2026-10-24
+
+The local Windows development environment was recovered after Supabase's default ports conflicted with Windows TCP excluded-port ranges. No hosted Supabase project was changed and no database reset or Docker volume deletion was performed.
+
+| Check | Observed result | Notes |
+|---|---|---|
+| Windows port diagnosis | PASS | Excluded ranges included 54227–54326 and 54327–54426, which covered the previous local Supabase ports. |
+| Local Supabase ports | UPDATED | API 55433; database 55434; shadow database 55435; Studio 55436; local email UI 55437; analytics 55438; pooler 55439. |
+| Local Supabase startup | PASS | CLI reported local development setup running. Image proxy, analytics, vector, and pooler were reported stopped/optional; core services were running. |
+| Storage health | PASS | Storage initially showed unhealthy during startup, then its current health status became `healthy`. |
+| Auth health endpoint | PASS — HTTP 200 | `GET http://127.0.0.1:55433/auth/v1/health`. |
+| PostgreSQL connectivity | PASS | `supabase db query` returned database `postgres`, user `postgres`, and a timestamp. |
+| `scripts/test-local-agent-hook.ps1` | PASS | Active contributor assignment produced `agent_contributor`; ordinary user retained `authenticated`; temporary test users/assignments were cleaned up. |
+| `npm run test:agent-api` | PASS — 13/13 | Static API contract checks. |
+| `npm run test:agent-role-hook` | PASS — 11/11 | Static role-hook contract checks. |
+| `npx tsc --noEmit` | PASS | Returned to PowerShell without diagnostics. |
+| `npm run build` | PASS | Next.js build completed; static page generation reported 21/21. A stale `baseline-browser-mapping` data warning was non-fatal. |
+| `git diff --check` | PASS | No whitespace errors reported. |
+| Git commit and push | PASS | Commit `dc87868` pushed to `technaam-phase7b-repair`. |
+| Local database recovery backup | PRESERVED LOCALLY | `phase7b-local-backup.dump` was present at 502,330 bytes and remained untracked; do not commit or delete until no longer needed. |
+| Hosted Supabase / `main` | NOT CHANGED | No production deployment, hosted database change, or merge to `main` occurred. |
+
+The commit `dc87868` adds `supabase/config.toml` and updates `scripts/test-local-agent-hook.ps1` to use API port 55433 and database port 55434. Because `supabase/config.toml` was previously untracked and is now committed, review before merging whether the 5543x port mapping should be shared with every developer. The local database dump remains outside Git.
+
+**Not re-run in this 2026-10-24 session:** live proposal submission, duplicate handling, and ordinary-user denial through the proposal API. Earlier live evidence from 2026-10-15/16 is retained above, but these scenarios should be revalidated against the recovered local environment before declaring Phase 7B complete.
+
 ## 4. Remaining Phase 7B work — in order
 
 ### P0 — Finish live API verification
@@ -108,7 +134,7 @@ These tests establish only the specific observed responses. They do not verify e
 - [ ] Review the database function, role assignment, RLS, and caller identity path (`auth.uid()` to proposal ownership) without broadening grants.
 - [ ] Treat the current in-memory rate limiter as per-process only; decide whether production requires shared/distributed rate limiting.
 - [ ] Treat route-level duplicate detection as best-effort; decide whether stronger atomic idempotency is needed before production.
-- [ ] Keep `supabase/config.toml` local unless and until its intended repository settings are explicitly reviewed.
+- [ ] Review commit `dc87868`: decide whether the committed `supabase/config.toml` and 5543x port assignments are intended to be shared before merging.
 
 ### P2 — Branch and handoff
 
@@ -153,4 +179,4 @@ The sequence below is a planning proposal. Each item should be scoped and review
 
 ## 6. Current conclusion
 
-The local contributor proposal path, local persistence, duplicate response, and ordinary-user denial were demonstrated in earlier local tests. In the latest local API session on 2026-10-16, GET returned HTTP 405; missing and invalid bearer tokens returned HTTP 401; malformed JSON with valid contributor authentication returned HTTP 400; and a retail observation returned HTTP 403. The temporary local test account was checked for cleanup and no matching account remained. The static API contract suite (13/13), TypeScript check, production build, and whitespace check passed locally on 2026-10-16. Remaining live checks include invalid HTTPS URLs, confidence boundaries, missing/invalid fields, unsupported types, rate limiting, and a repeat ordinary-user test. The repair branch is pushed and synchronized with its remote; `supabase/config.toml` remains local and untracked. No merge to `main`, hosted Supabase change, or deployment was performed. **Phase 7B is not yet declared complete or production-ready.**
+The local contributor proposal path, local persistence, duplicate response, and ordinary-user denial were demonstrated in earlier local tests. In the 2026-10-16 live API session, GET returned HTTP 405; missing and invalid bearer tokens returned HTTP 401; malformed JSON with valid contributor authentication returned HTTP 400; and a retail observation returned HTTP 403. On 2026-10-24, the local Supabase stack was recovered on ports 55433–55439; Auth health returned HTTP 200; PostgreSQL query, Auth Hook integration, both static contract suites (13/13 and 11/11), TypeScript, and the Next.js build passed. Live proposal submission, duplicate handling, and ordinary-user denial were not rerun during the 2026-10-24 recovery session. The port repair commit `dc87868` is pushed; it includes `supabase/config.toml`, so its team-wide port implications need review before merging. The local backup `phase7b-local-backup.dump` remains untracked and must not be committed. No merge to `main`, hosted Supabase change, or deployment was performed. **Phase 7B is not yet declared complete or production-ready.**
