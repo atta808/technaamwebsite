@@ -2,6 +2,7 @@
 # Run from repository root in PowerShell 7+ or Windows PowerShell 5.1.
 # Local services only. Tokens and API keys are never printed.
 # Creates uniquely named local test users and one temporary proposal; cleanup is scoped.
+# Validation cases are expected to fail before any database write.
 
 $ErrorActionPreference = "Stop"
 
@@ -155,6 +156,34 @@ try {
     $retailBody = @{ type = "suggest_retail_observation"; payload = @{}; source_url = "https://example.com/phase7b-retail-disabled"; confidence = 0.5 } | ConvertTo-Json -Depth 8 -Compress
     $retail = Get-ResponseStatus -Uri "$appUrl/api/agent/proposals" -Method "Post" -Headers $contributorHeaders -Body $retailBody
     Assert-Status "Retail pilot remains disabled" 403 $retail.Status
+
+    # Validation failures must be rejected before any proposal is written.
+    $invalidSourceBody = @{
+        type = "suggest_technology"
+        payload = @{ name = "Invalid source URL test"; slug = "invalid-source-url-test"; entity_type = "other" }
+        source_url = "http://example.com/not-https"
+        confidence = 0.5
+    } | ConvertTo-Json -Depth 8 -Compress
+    $invalidSource = Get-ResponseStatus -Uri "$appUrl/api/agent/proposals" -Method "Post" -Headers $contributorHeaders -Body $invalidSourceBody
+    Assert-Status "Non-HTTPS source URL rejected" 400 $invalidSource.Status
+
+    $invalidConfidenceBody = @{
+        type = "suggest_technology"
+        payload = @{ name = "Invalid confidence test"; slug = "invalid-confidence-test"; entity_type = "other" }
+        source_url = "https://example.com/phase7b-invalid-confidence"
+        confidence = 1.01
+    } | ConvertTo-Json -Depth 8 -Compress
+    $invalidConfidence = Get-ResponseStatus -Uri "$appUrl/api/agent/proposals" -Method "Post" -Headers $contributorHeaders -Body $invalidConfidenceBody
+    Assert-Status "Confidence above 1 rejected" 400 $invalidConfidence.Status
+
+    $unsupportedBody = @{
+        type = "unsupported_test_type"
+        payload = @{}
+        source_url = "https://example.com/phase7b-unsupported-type"
+        confidence = 0.5
+    } | ConvertTo-Json -Depth 8 -Compress
+    $unsupported = Get-ResponseStatus -Uri "$appUrl/api/agent/proposals" -Method "Post" -Headers $contributorHeaders -Body $unsupportedBody
+    Assert-Status "Unsupported proposal type rejected" 400 $unsupported.Status
 
     $ordinaryEmail = "phase7b-live-ordinary-$([Guid]::NewGuid().ToString('N'))@example.com"
     $ordinaryPassword = [Guid]::NewGuid().ToString('N') + "Aa1!"
