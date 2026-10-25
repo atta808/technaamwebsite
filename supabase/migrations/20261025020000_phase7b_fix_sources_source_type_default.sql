@@ -1,0 +1,21 @@
+-- Phase 7B corrective migration: reconcile sources.source_type default with
+-- the v2 check constraint.
+--
+-- 20260826000000 created sources.source_type with DEFAULT 'vendor' and a check
+-- that allowed 'vendor'. 20260826010000 (schema_v2_dataset) replaced that check
+-- with an allowed set that no longer includes 'vendor' but did not update the
+-- column default. Consequently, any INSERT that omits source_type supplies the
+-- now-invalid default and fails sources_source_type_check. The SECURITY
+-- DEFINER promotion RPCs create sources from agent-supplied URLs without an
+-- explicit type, so technology and relationship promotion currently fail
+-- whenever the source does not already exist.
+--
+-- 'other' is the generic catch-all in the allowed set and is the correct type
+-- for a source created without an explicit classification.
+--
+-- Forward-only and metadata-only: this changes only the column default. It does
+-- not rewrite existing rows (the table is currently empty) and does not alter
+-- any function, policy, grant, or historical migration.
+--
+ALTER TABLE public.sources
+    ALTER COLUMN source_type SET DEFAULT 'other';
