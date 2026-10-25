@@ -2,9 +2,9 @@
 
 **Repository:** `atta808/technaamwebsite`  
 **Working branch:** `technaam-phase7b-repair`  
-**Status:** Local stack recovered and core checks pass; live proposal API edge cases and release review remain  
-**Last updated:** 2026-10-24  
-**Latest implementation commit:** `dc87868` — local Supabase port remap and integration-test update  
+**Status:** Local database privilege hardening batches 1–2 applied, regression-verified, committed, and pushed; separate Phase 7B API/release-readiness items remain  
+**Last updated:** 2026-10-25  
+**Latest implementation commit:** `d8d2483` — Phase 7B database privilege hardening (12 files; pushed to `technaam-phase7b-repair`)  
 **Local API validation checkpoint:** `506e18b` — `fix: harden Phase 7B agent proposal validation`
 
 > This document distinguishes observed local results from pending work. Passing local checks does not certify production readiness.
@@ -180,3 +180,61 @@ The sequence below is a planning proposal. Each item should be scoped and review
 ## 6. Current conclusion
 
 The local contributor proposal path, local persistence, duplicate response, and ordinary-user denial were demonstrated in earlier local tests. In the 2026-10-16 live API session, GET returned HTTP 405; missing and invalid bearer tokens returned HTTP 401; malformed JSON with valid contributor authentication returned HTTP 400; and a retail observation returned HTTP 403. On 2026-10-24, the local Supabase stack was recovered on ports 55433–55439; Auth health returned HTTP 200; PostgreSQL query, Auth Hook integration, both static contract suites (13/13 and 11/11), TypeScript, and the Next.js build passed. Live proposal submission, duplicate handling, and ordinary-user denial were not rerun during the 2026-10-24 recovery session. The port repair commit `dc87868` is pushed; it includes `supabase/config.toml`, so its team-wide port implications need review before merging. The local backup `phase7b-local-backup.dump` remains untracked and must not be committed. No merge to `main`, hosted Supabase change, or deployment was performed. **Phase 7B is not yet declared complete or production-ready.**
+
+---
+
+## 7. Update — 2026-10-25: Database privilege hardening checkpoint
+
+**Scope:** Local database security hardening only. This does not mark the entire Phase 7B API/release process production-ready.
+
+### Applied migrations
+
+The following seven migrations are recorded as applied in the local PostgreSQL 17.6 database (`127.0.0.1:55434`, database `postgres`):
+
+- `20261025000000_phase7b_revoke_agent_proposals_writes.sql`
+- `20261025010000_phase7b_revoke_identifiers_audit_privileges.sql`
+- `20261025020000_phase7b_fix_sources_source_type_default.sql`
+- `20261025030000_phase7b_internalize_tech_categories.sql`
+- `20261025040000_phase7b_default_privileges_public_tables.sql`
+- `20261025050000_phase7b_revoke_catalog_writes.sql`
+- `20261025060000_phase7b_revoke_internal_table_privileges.sql`
+
+The final local audit reported all seven applied and zero pending local migrations. No production/hosted database was accessed or changed.
+
+### Regression evidence reported
+
+- Catalog write restrictions: 85/85 checks passed.
+- Internal-table privileges: 30/30 checks passed.
+- Agent API contract: 13/13 checks passed.
+- Agent role-hook contract: 11/11 checks passed.
+- Source-promotion scenarios: 3/3 passed.
+- Technology categories: 31/31 checks passed.
+- Default privileges: 31/31 checks passed.
+
+These are previously executed local results reported during the 2026-10-25 work. The final read-only integrity check did not rerun tests.
+
+### Git and publication checkpoint
+
+- Branch: `technaam-phase7b-repair`
+- Commit: `d8d248308f3d3a875a4d1e5a445a09d28b2f47c5`
+- Commit message: `chore(security): harden Phase 7B database privileges`
+- Commit contains exactly 12 files: seven migrations and five regression scripts.
+- Commit pushed successfully to `origin/technaam-phase7b-repair`.
+- Local HEAD and remote-tracking ref matched after push; ahead/behind was `0/0`.
+- Working tree had no staged or modified files. Five expected local backups/notes remain untracked and were not uploaded:
+  - `phase7b-local-backup.dump`
+  - `phase7b-submit-function-review.txt`
+  - `scripts/test-agent-api-live.local-backup-2.ps1`
+  - `scripts/test-agent-api-live.local-backup.ps1`
+  - `scripts/test-agent-api-live.pre-sync-backup.ps1`
+
+### Remaining scope and decisions
+
+- Production deployment is not performed or authorized by this checkpoint.
+- Before any production migration, confirm the target database, PostgreSQL 17 compatibility (the migrations use the PG17 `MAINTAIN` privilege), production ownership/grants, backup/rollback plan, and explicit release approval.
+- `supabase_admin` public-table default privileges remain a documented residual risk. The local audit found no `public` tables owned by `supabase_admin`; reconsider only after checking production ownership or if defense-in-depth is explicitly approved.
+- Sequence and function default privileges were outside the table-default migration's scope. No current exposure was identified in the local audit; assess separately before broadening scope.
+- Commercial `service_role` grants for `commercial.stores`, `commercial.sellers`, and `commercial.retail_offers` remain deferred because no current writer was identified.
+- Separate Phase 7B API verification/release-readiness items in Section 4 remain open. Passing database privilege tests does not by itself certify the API or production deployment.
+
+**Checkpoint conclusion:** The local database privilege-hardening batches are complete, regression-verified, committed, and pushed on the repair branch. Production remains untouched; overall Phase 7B release readiness remains a separate decision.
