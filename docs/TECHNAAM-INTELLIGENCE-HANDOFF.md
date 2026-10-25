@@ -1,5 +1,8 @@
 # TechNaam Intelligence Engineering Handoff
 
+> **Latest checkpoint — 2026-10-25:** Phase 7B database privilege-hardening batches 1–2 are applied and regression-verified on the local PostgreSQL 17.6 database. Seven migration files and five regression scripts are committed and pushed to `technaam-phase7b-repair` in commit `d8d248308f3d3a875a4d1e5a445a09d28b2f47c5`. The final read-only audit reported seven Phase 7B migrations applied, zero pending local migrations, and a clean working tree apart from five preserved untracked local backups/notes. No production database was changed and no deployment occurred. See `docs/PHASE7B_STATUS_AND_ROADMAP.md` for detailed migration/test evidence and remaining Phase 7B API/release-readiness items.
+
+
 > **Document role:** Living engineering handoff and current-state record for TechNaam Intelligence.
 >
 > **Update rule:** This document MUST be updated by the responsible coding agent (including Google Jules/Codex) after every completed phase or material milestone. It is not a historical snapshot. The latest committed version is the authoritative engineering handoff for the repository.
@@ -1486,3 +1489,51 @@ Commercial opportunities follow the truth; they do not redefine it.
 - **Condition:** The test script `scripts/test-phase7-governance.mjs` was rewritten to require a real PostgreSQL database instance to explicitly test the `agent_contributor` and `agent_reviewer` PostgREST role boundaries and verify no unauthorized writes are possible.
 - **Result:** Because the sandbox environment lacks Docker/Supabase CLI capability to run a target local database with the Phase 7A schema applied, the integration test gracefully aborts with `NOT VERIFIED`.
 - **Action Required:** This migration and architecture must be run against a real database instance to execute `npm run test:phase7-governance` to completion before it can be marked fully verified and safe for production.
+
+---
+
+## 45. Phase 7B Database Security Checkpoint — 2026-10-25
+
+This checkpoint supplements the historical phase logs above; it does not replace the strategic roadmap or claim production readiness.
+
+### Completed locally
+
+- Seven Phase 7B privilege-hardening migrations (`20261025000000` through `20261025060000`) are recorded as applied in local PostgreSQL 17.6, database `postgres` at `127.0.0.1:55434`.
+- Final local audit reported zero pending migrations.
+- Regression results reported during the work:
+  - Catalog write restrictions: 85/85.
+  - Internal table privileges: 30/30.
+  - Agent API contract: 13/13.
+  - Agent role-hook contract: 11/11.
+  - Source-promotion scenarios: 3/3.
+  - Technology categories: 31/31.
+  - Default privileges: 31/31.
+- The tests were not rerun during the final read-only integrity check; results above are historical run outputs, not new executions.
+
+### Git checkpoint
+
+- Branch: `technaam-phase7b-repair`.
+- Commit: `d8d248308f3d3a875a4d1e5a445a09d28b2f47c5`.
+- Message: `chore(security): harden Phase 7B database privileges`.
+- Exactly 12 files committed: seven migrations and five regression scripts.
+- Commit pushed successfully to `origin/technaam-phase7b-repair`; local HEAD and the remote-tracking ref matched, with `0/0` ahead/behind at the final check.
+- Five local backups/notes remain untracked and were intentionally not uploaded. Preserve them until no longer required.
+
+### Deferred / not authorized
+
+- No production or hosted Supabase changes; no deployment; no merge to `main`.
+- Production readiness requires separate authorization and a reviewed target/version/ownership check, backup and rollback plan, and post-deployment verification.
+- Local `supabase_admin` public-table defaults are documented as a dormant residual risk because no local `public` tables were owned by that role. Verify production ownership before any production decision.
+- Sequence/function default privileges were outside the table-only migration scope and remain a separate assessment item.
+- Commercial `service_role` grants remain deferred until a real writer is introduced.
+- Overall Phase 7B API/release readiness remains distinct from the completed local database privilege-hardening work.
+
+### Current handoff
+
+**Completed:** Local database privilege hardening, regression verification, commit, and push to the repair branch.
+
+**Current:** No further changes authorized by the 2026-10-25 checkpoint.
+
+**Next:** Only on renewed owner approval: review the remaining API release checks and prepare a separate production deployment plan. Do not apply production migrations or merge to `main` by implication.
+
+**Updated:** 2026-10-25
