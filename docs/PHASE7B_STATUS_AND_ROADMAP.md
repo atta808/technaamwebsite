@@ -238,3 +238,90 @@ These are previously executed local results reported during the 2026-10-25 work.
 - Separate Phase 7B API verification/release-readiness items in Section 4 remain open. Passing database privilege tests does not by itself certify the API or production deployment.
 
 **Checkpoint conclusion:** The local database privilege-hardening batches are complete, regression-verified, committed, and pushed on the repair branch. Production remains untouched; overall Phase 7B release readiness remains a separate decision.
+
+---
+
+## 8. Update — 2026-11-06: Governance hardening, rate limiting, and GitHub checkpoint
+
+**Scope:** Local development and repair-branch publication only. This update does not certify production readiness or authorize a merge to `main` or deployment.
+
+### Implementation completed locally
+
+- Added bounded per-user rate limiting for `POST /api/agent/proposals`, with role gating before rate-limit bucket allocation.
+- Added a rate-limit gate and tests; the limiter is in-memory and therefore per-process, not a shared/distributed production limiter.
+- Hardened reviewer governance transitions:
+  - Explicit self-review prevention for approval/rejection and promotion.
+  - Row locks using `FOR UPDATE`.
+  - Conditional status transitions to prevent stale or competing state changes.
+  - Atomic promotion behavior for technology and relationship proposals.
+- Added migration `20261106000000_phase7b_governance_hardening.sql` and matching rollback SQL.
+- Retail observation promotion remains disabled.
+- No reviewer-facing HTTP endpoint was added; reviewer operations remain database RPC-governed.
+
+### Local database and migration history
+
+- Local database: PostgreSQL at `127.0.0.1:55434`, project config ID `technaam-web`.
+- Supabase CLI v3.0.0 installed outside the repository at `%USERPROFILE%\\.supabase\\bin\\supabase.exe`; release checksum was verified.
+- The hardening migration SQL had already been applied directly to the local database and its three function definitions were verified.
+- Reconciled local migration history using:
+  `supabase migration repair 20261106000000 --status applied`
+- Verification confirmed exactly one history row:
+  `20261106000000 | phase7b_governance_hardening`
+- `supabase migration list` showed the migration as applied locally.
+- Local migration files/history are consistent: 18 migration files and 18 recorded versions.
+- The three functions `approve_agent_proposal`, `promote_technology_proposal`, and `promote_relationship_proposal` each retained row-lock, self-review, and conditional-status checks.
+- The migration SQL was not re-executed during history repair.
+
+### Regression and static verification reported
+
+All results below were reported by the local Codex execution:
+
+| Suite / check | Result |
+|---|---:|
+| Governance hardening, real DB / two connections | 19/19 PASS |
+| Reviewer promotion, real DB | 26/26 PASS |
+| Phase 7 governance, real DB | 15/15 PASS |
+| Rate limiter | 21/21 PASS |
+| Agent API | 15/15 PASS |
+| Auth role hook | 11/11 PASS |
+| TypeScript `tsc --noEmit` | 0 errors |
+| ESLint on changed files | 0 errors |
+
+These results are local test evidence. They do not constitute production verification or a complete security certification.
+
+### GitHub publication
+
+- Repository: `atta808/technaamwebsite`
+- Branch: `technaam-phase7b-repair`
+- Implementation commit: `84a4241` — `feat(agent): harden Phase 7B governance and rate limiting`
+- Preserved remote documentation commits: `d28b11e` and `c2f72c7`.
+- Merge commit: `675f23f`.
+- Push succeeded; GitHub branch HEAD was reported as `675f23f`.
+- All 11 implementation/test/migration files from the implementation commit were present in the merged HEAD.
+- Five local backup/review files remained untracked and were deliberately excluded from Git:
+  - `phase7b-local-backup.dump`
+  - `phase7b-submit-function-review.txt`
+  - `scripts/test-agent-api-live.local-backup-2.ps1`
+  - `scripts/test-agent-api-live.local-backup.ps1`
+  - `scripts/test-agent-api-live.pre-sync-backup.ps1`
+
+### Safety and remaining limitations
+
+- Production Supabase was not accessed or modified during this milestone.
+- No migration was applied to production.
+- No deployment or merge to `main` occurred.
+- The proposal endpoint's in-memory limiter is not distributed across serverless instances; shared rate limiting remains a production-readiness decision.
+- Other agent API routes were not included in this rate-limiter change and require separate review if they are to receive equivalent protections.
+- Route-level duplicate detection remains best-effort rather than a distributed atomic idempotency guarantee.
+- A disposable-database rollback rehearsal remains advisable before any production migration decision.
+- Production grants, RLS, role-hook configuration, ownership, migration ordering, backup/rollback, and post-deployment verification require a separate reviewed plan and explicit authorization.
+
+### Current conclusion
+
+**Completed:** Local Phase 7B governance hardening and rate-limit implementation, local regression verification, local migration-history reconciliation, and publication to `technaam-phase7b-repair`.
+
+**Current:** The repair branch is published at merge commit `675f23f`.
+
+**Next:** Conduct a read-only production-readiness review and decide the shared rate-limit strategy. Do not merge to `main`, modify hosted Supabase, or deploy without separate explicit approval.
+
+**Updated:** 2026-11-06
