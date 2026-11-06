@@ -1537,3 +1537,55 @@ This checkpoint supplements the historical phase logs above; it does not replace
 **Next:** Only on renewed owner approval: review the remaining API release checks and prepare a separate production deployment plan. Do not apply production migrations or merge to `main` by implication.
 
 **Updated:** 2026-10-25
+
+---
+
+## Latest Engineering Handoff — 2026-11-06
+
+### Current Phase Status
+
+**Completed**
+- Phase 7B local proposal API rate-limit hardening for `POST /api/agent/proposals`, including per-user bounded in-memory limits and role gating before bucket allocation.
+- Phase 7B governance hardening for reviewer approval/rejection and technology/relationship promotion:
+  - self-review prevention;
+  - `FOR UPDATE` row locking;
+  - conditional status transitions;
+  - atomic promotion behavior verified under two-connection concurrency tests.
+- Added migration `20261106000000_phase7b_governance_hardening.sql` and its rollback companion.
+- Reconciled the already-applied migration with local Supabase migration history. The row `20261106000000 | phase7b_governance_hardening` is recorded; local migration files/history are 18/18.
+- Published the implementation and documentation history to GitHub branch `technaam-phase7b-repair`.
+
+**Current**
+- GitHub repair branch HEAD: `675f23f` (merge commit).
+- Implementation commit: `84a4241`.
+- Remote documentation commits preserved in the merge: `d28b11e` and `c2f72c7`.
+- The repair branch is synchronized with GitHub according to the completed push report.
+- No production migration, production database write, merge to `main`, or deployment has been performed.
+
+**Verification**
+- Governance hardening, real local DB with two connections: 19/19 PASS.
+- Reviewer promotion, real local DB: 26/26 PASS.
+- Phase 7 governance, real local DB: 15/15 PASS.
+- Rate limiter: 21/21 PASS.
+- Agent API: 15/15 PASS.
+- Auth role hook: 11/11 PASS.
+- TypeScript: 0 errors.
+- ESLint on changed files: 0 errors.
+- Local migration history: 18 files / 18 recorded versions; hardening migration confirmed applied.
+- Hardened approval and promotion functions retain row locks, self-review checks, and conditional status updates.
+
+**Known limitations**
+- The proposal API rate limiter is in-memory and per-process; production needs a separately selected shared/distributed rate-limit mechanism if global enforcement is required.
+- Other agent routes were not covered by this rate-limit change.
+- Route-level duplicate detection remains best-effort, not a distributed atomic idempotency guarantee.
+- The rollback SQL was verified in the local development workflow; a disposable-database rollback rehearsal is still recommended before production use.
+- Local test success does not establish production parity or production readiness.
+
+**Next**
+1. Perform a read-only production-readiness review of migration ordering, grants, RLS, role-hook setup, ownership, and residual privileges.
+2. Decide the shared rate-limit architecture and scope across agent routes.
+3. Prepare a production migration/rollback plan only after parity and backup checks.
+4. Keep `main`, hosted Supabase, and deployments untouched until separately authorized.
+
+**Updated:** 2026-11-06
+
