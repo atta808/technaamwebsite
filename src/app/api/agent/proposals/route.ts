@@ -1,29 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { authenticateAgent } from "@/lib/agent/auth";
+import { SlidingWindowRateLimiter } from "@/lib/agent/rate-limit";
+import { agentRateLimitGate } from "@/lib/agent/rate-limit-gate";
 
 export const runtime = "nodejs";
 
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
-const requestLog = new Map<string, number[]>();
+const rateLimiter = new SlidingWindowRateLimiter(MAX_REQUESTS, WINDOW_MS);
 
 type ProposalType = "suggest_technology" | "suggest_relationship";
 type JsonObject = Record<string, unknown>;
-
-function rateLimited(key: string): boolean {
-  const now = Date.now();
-  const recent = (requestLog.get(key) ?? []).filter(
-    (time) => now - time < WINDOW_MS,
-  );
-  if (recent.length >= MAX_REQUESTS) {
-    requestLog.set(key, recent);
-    return true;
-  }
-  recent.push(now);
-  requestLog.set(key, recent);
-  return false;
-}
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -148,9 +136,12 @@ export async function POST(request: NextRequest) {
   const auth = await authenticateAgent(request);
   if (!auth.ok) return jsonError(auth.error, auth.status);
 
-  const clientKey = `${auth.userId}:${request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"}`;
-  if (rateLimited(clientKey))
-    return jsonError("Rate limit exceeded. Try again shortly.", 429);
+  // Authorize (agent_contributor) before allocating rate-limit capacity, so an
+  // ordinary authenticated user cannot consume a bucket or exhaust the
+  // limiter's identity capacity. The rate-limit identity is the authenticated
+  // Supabase user ID only; client-controlled headers are never part of the key.
+  const gate = agentRateLimitGate(auth, rateLimiter);
+  if (!gate.ok) return jsonError(gate.error, gate.status);
 
   let body: unknown;
   try {

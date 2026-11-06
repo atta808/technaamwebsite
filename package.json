@@ -22,6 +22,9 @@
     "test:phase7-governance": "tsx scripts/test-phase7-governance.mjs",
     "test:agent-api": "node scripts/test-agent-api.mjs",
     "test:agent-role-hook": "node scripts/test-agent-role-hook.mjs",
+    "test:phase7b-rate-limit": "tsx scripts/test-phase7b-rate-limit.ts",
+    "test:phase7b-reviewer": "tsx scripts/test-phase7b-reviewer-promotion.ts",
+    "test:phase7b-hardening": "tsx scripts/test-phase7b-governance-hardening.ts",
     "dev:turbo": "next dev --turbo"
   },
   "dependencies": {

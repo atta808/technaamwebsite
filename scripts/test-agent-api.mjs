@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 const auth = await readFile("src/lib/agent/auth.ts", "utf8");
 const route = await readFile("src/app/api/agent/proposals/route.ts", "utf8");
+const gate = await readFile("src/lib/agent/rate-limit-gate.ts", "utf8");
 const migration = await readFile(
   "supabase/migrations/20260826070000_phase7_agent_governance.sql",
   "utf8",
@@ -22,7 +23,19 @@ const checks = [
   ],
   [
     "rate limits requests",
-    /MAX_REQUESTS = 20/.test(route) && /rateLimited\(clientKey\)/.test(route),
+    /MAX_REQUESTS = 20/.test(route) && /agentRateLimitGate\(auth, rateLimiter\)/.test(route),
+  ],
+  [
+    "rate-limit key is the authenticated user, not client headers",
+    /limiter\.check\(auth\.userId\)/.test(gate) &&
+      !/headers\.get\(["']x-forwarded-for["']\)/.test(route) &&
+      !/\$\{auth\.userId\}:/.test(route),
+  ],
+  [
+    "authorizes contributor before allocating a rate-limit bucket",
+    /auth\.role !== "agent_contributor"/.test(gate) &&
+      /status: 403/.test(gate) &&
+      /limiter\.check\(auth\.userId\)/.test(gate),
   ],
   [
     "rejects disabled retail proposals",
